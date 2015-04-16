@@ -69,9 +69,9 @@ int     TotalDrawTime = 0;
 int     TotalTriangles = 0;
 int     TotalDrawCalls = 0;
 
-//#define glDrawElements(A,B,C,D) \
-    TotalTriangles += B; TotalDrawCalls++; int t = ticksGetTicks(); glDrawElements(A,B,C,D); OPENGL_CHECK_ERRORS; TotalDrawTime += (ticksGetTicks() - t);
 #define glDrawElements(A,B,C,D) \
+    TotalTriangles += B; TotalDrawCalls++; int t = ticksGetTicks(); glDrawElements(A,B,C,D); OPENGL_CHECK_ERRORS; TotalDrawTime += (ticksGetTicks() - t);
+//#define glDrawElements(A,B,C,D) \
     TotalTriangles += B; TotalDrawCalls++; int t = ticksGetTicks(); OPENGL_CHECK_ERRORS; TotalDrawTime += (ticksGetTicks() - t);
 #define glDrawArrays(A,B,C) \
     TotalTriangles += C; TotalDrawCalls++; int t = ticksGetTicks(); glDrawArrays(A,B,C); OPENGL_CHECK_ERRORS; TotalDrawTime += (ticksGetTicks() - t);
