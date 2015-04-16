@@ -933,7 +933,8 @@ void gDPFullSync()
 {
     *REG.MI_INTR |= MI_INTR_DP;
 
-    CheckInterrupts();
+    // FIXME(tachiweasel): Doesn't work in multithreaded mode.
+    // CheckInterrupts();
 
 #ifdef DEBUG
     DebugMsg( DEBUG_HIGH | DEBUG_HANDLED, "gDPFullSync();\n" );

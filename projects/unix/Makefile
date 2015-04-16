@@ -119,8 +119,8 @@ ifneq ("$(filter arm%,$(HOST_CPU))","")
       CFLAGS += -DARM_ASM
       CFLAGS += -D__NEON_OPT
       ifeq ("$(filter -mfpu=neon%,$(OPTFLAGS))","")
-    	CFLAGS += -mfpu=neon
-    	$(warning Use default -mfpu=neon.')
+        CFLAGS += -mfpu=neon
+        $(warning Use default -mfpu=neon.')
       endif
     endif
     $(warning Architecture "$(HOST_CPU)" not officially supported.')
@@ -318,7 +318,7 @@ LINK.o = $(Q_LD)$(CXX) $(CXXFLAGS) $(LDFLAGS) $(TARGET_ARCH)
 # set special flags for given Makefile parameters
 ifeq ($(DEBUG),1)
   	CFLAGS += -g
-	CFLAGS+= -DOPENGL_DEBUG
+	CFLAGS += -DOPENGL_DEBUG
   INSTALL_STRIP_FLAG ?= 
 else
   CFLAGS += -O3 
@@ -328,6 +328,9 @@ else
 endif
 ifeq ($(NO_ASM), 1)
   CFLAGS += -DNO_ASM
+endif
+ifeq ($(PROFILE), 1)
+  CFLAGS += -g
 endif
 
 # set installation options
@@ -378,7 +381,8 @@ $(SRCDIR)/S2DEX2.cpp \
 $(SRCDIR)/S2DEX.cpp \
 $(SRCDIR)/ShaderCombiner.cpp \
 $(SRCDIR)/Textures.cpp \
-$(SRCDIR)/VI.cpp
+$(SRCDIR)/VI.cpp \
+$(SRCDIR)/VideoThread.cpp
 
 ifeq ($(VFP), 1)
   SOURCE += $(SRCDIR)/gSPVFP.cpp

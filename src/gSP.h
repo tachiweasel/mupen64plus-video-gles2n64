@@ -47,7 +47,7 @@
 		    (RSP.nextCmd != G_QUAD) \
 		) \
 		{ \
-		    OGL_DrawTriangles(); \
+		    /*OGL_DrawTriangles();*/ \
 		}
 	#endif
 #endif

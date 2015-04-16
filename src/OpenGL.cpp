@@ -31,6 +31,7 @@
 #include "ticks.h"
 #include "OGLDebug.h"
 #include "FrameSkipper.h"
+#include "GBI.h"
 #ifdef VC
 #include <bcm_host.h>
 #endif
@@ -44,6 +45,11 @@
 //// paulscode, function prototype missing from Yongzh's code
 void OGL_UpdateDepthUpdate();
 ////
+
+#define BATCH_TEST 1
+#define TEXTURECACHE_TEST 1
+#define RENDERSTATE_TEST 1
+#define SHADER_TEST 1
 
 #ifdef TEXTURECACHE_TEST
 int     TextureCacheTime = 0;
@@ -63,8 +69,10 @@ int     TotalDrawTime = 0;
 int     TotalTriangles = 0;
 int     TotalDrawCalls = 0;
 
-#define glDrawElements(A,B,C,D) \
+//#define glDrawElements(A,B,C,D) \
     TotalTriangles += B; TotalDrawCalls++; int t = ticksGetTicks(); glDrawElements(A,B,C,D); OPENGL_CHECK_ERRORS; TotalDrawTime += (ticksGetTicks() - t);
+#define glDrawElements(A,B,C,D) \
+    TotalTriangles += B; TotalDrawCalls++; int t = ticksGetTicks(); OPENGL_CHECK_ERRORS; TotalDrawTime += (ticksGetTicks() - t);
 #define glDrawArrays(A,B,C) \
     TotalTriangles += C; TotalDrawCalls++; int t = ticksGetTicks(); glDrawArrays(A,B,C); OPENGL_CHECK_ERRORS; TotalDrawTime += (ticksGetTicks() - t);
 
@@ -988,6 +996,7 @@ void OGL_UpdateStates()
         //For some reason updating the texture cache on the first frame of LOZ:OOT causes a NULL Pointer exception...
         if (scProgramCurrent)
         {
+#if 1
             if (scProgramCurrent->usesT0)
             {
 #ifdef TEXTURECACHE_TEST
@@ -1003,9 +1012,13 @@ void OGL_UpdateStates()
                 SC_ForceUniform2f(uCacheOffset[0], cache.current[0]->offsetS, cache.current[0]->offsetT);
             }
             //else TextureCache_ActivateDummy(0);
+#else
+            TextureCache_ActivateDummy(0);
+#endif
 
             //Note: enabling dummies makes some F-zero X textures flicker.... strange.
 
+#if 1
             if (scProgramCurrent->usesT1)
             {
 #ifdef TEXTURECACHE_TEST
@@ -1021,6 +1034,9 @@ void OGL_UpdateStates()
                 SC_ForceUniform2f(uCacheOffset[1], cache.current[1]->offsetS, cache.current[1]->offsetT);
             }
             //else TextureCache_ActivateDummy(1);
+#else
+            TextureCache_ActivateDummy(1);
+#endif
         }
     }
 
@@ -1171,8 +1187,9 @@ void OGL_DrawTriangles()
     if ((config.updateMode == SCREEN_UPDATE_AT_1ST_PRIMITIVE) && OGL.screenUpdate)
         OGL_SwapBuffers();
 
-    if (gSP.changed || gDP.changed)
+    if (gSP.changed || gDP.changed) {
         OGL_UpdateStates();
+    }
 
     if (OGL.renderState != RS_TRIANGLE || scProgramChanged)
     {
@@ -1188,6 +1205,7 @@ void OGL_DrawTriangles()
 #ifdef RENDERSTATE_TEST
         StateChanges++;
 #endif
+        printf("*** state change!\n");
         glVertexAttribPointer(SC_POSITION, 4, GL_FLOAT, GL_FALSE, sizeof(SPVertex), &OGL.triangles.vertices[0].x);
 		OPENGL_CHECK_ERRORS;
 
@@ -1593,7 +1611,7 @@ void OGL_SwapBuffers()
 {
     //OGL_DrawTriangles();
     scProgramChanged = 0;
-#if 0
+#ifdef BATCH_TEST
     static int frames = 0;
     static unsigned lastTicks = 0;
     unsigned ticks = ticksGetTicks();
@@ -1609,22 +1627,22 @@ void OGL_SwapBuffers()
         OGL.frameSkipped = 0;
 
 #ifdef BATCH_TEST
-        LOG(LOG_MINIMAL, "time spent in draw calls per frame = %.2f ms\n", (float)TotalDrawTime / frames);
-        LOG(LOG_MINIMAL, "average draw calls per frame = %.0f\n", (float)TotalDrawCalls / frames);
-        LOG(LOG_MINIMAL, "average vertices per draw call = %.2f\n", (float)TotalTriangles / TotalDrawCalls);
+        printf("time spent in draw calls per frame = %.2f ms\n", (float)TotalDrawTime / frames);
+        printf("average draw calls per frame = %.0f\n", (float)TotalDrawCalls / frames);
+        printf("average vertices per draw call = %.2f\n", (float)TotalTriangles / TotalDrawCalls);
         TotalDrawCalls = 0;
         TotalTriangles = 0;
         TotalDrawTime = 0;
 #endif
 
 #ifdef SHADER_TEST
-        LOG(LOG_MINIMAL, "average shader changes per frame = %f\n", (float)ProgramSwaps / frames);
+        printf("average shader changes per frame = %f\n", (float)ProgramSwaps / frames);
         ProgramSwaps = 0;
 #endif
 
 #ifdef TEXTURECACHE_TEST
-        LOG(LOG_MINIMAL, "texture cache time per frame: %.2f ms\n", (float)TextureCacheTime/ frames);
-        LOG(LOG_MINIMAL, "texture cache per frame: hits=%.2f misses=%.2f\n", (float)cache.hits / frames,
+        printf("texture cache time per frame: %.2f ms\n", (float)TextureCacheTime/ frames);
+        printf("texture cache per frame: hits=%.2f misses=%.2f\n", (float)cache.hits / frames,
                 (float)cache.misses / frames);
         cache.hits = cache.misses = 0;
         TextureCacheTime = 0;
@@ -1641,10 +1659,10 @@ void OGL_SwapBuffers()
     static u32 profileLastTicks = 0;
     if (profileTicks >= (profileLastTicks + 5000))
     {
-        LOG(LOG_MINIMAL, "GBI PROFILE DATA: %i ms \n", profileTicks - profileLastTicks);
-        LOG(LOG_MINIMAL, "=========================================================\n");
+        printf("GBI PROFILE DATA: %i ms \n", profileTicks - profileLastTicks);
+        printf("=========================================================\n");
         GBI_ProfilePrint(stdout);
-        LOG(LOG_MINIMAL, "=========================================================\n");
+        printf("=========================================================\n");
         GBI_ProfileReset();
         profileLastTicks = profileTicks;
     }

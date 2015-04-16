@@ -19,6 +19,8 @@
 #define F3DCBFD     11
 #define NONE        12
 
+#define PROFILE_GBI 1
+
 #ifdef MAINDEF
 const char *MicrocodeTypes[] =
 {

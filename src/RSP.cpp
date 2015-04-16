@@ -15,8 +15,8 @@
 #include "gSP.h"
 #include "Textures.h"
 
-//#define PRINT_DISPLAYLIST
-//#define PRINT_DISPLAYLIST_NUM 1
+// #define PRINT_DISPLAYLIST
+// #define PRINT_DISPLAYLIST_NUM 1
 
 RSPInfo     RSP;
 
@@ -89,7 +89,7 @@ void RSP_ProcessDList()
     gDPPipelineMode(G_PM_NPRIMITIVE);
 
 #ifdef PRINT_DISPLAYLIST
-    if ((RSP.DList%PRINT_DISPLAYLIST_NUM) == 0) LOG(LOG_VERBOSE, "BEGIN DISPLAY LIST %i \n", RSP.DList);
+    if ((RSP.DList%PRINT_DISPLAYLIST_NUM) == 0) printf("BEGIN DISPLAY LIST %i \n", RSP.DList);
 #endif
 
     while (!RSP.halt)
@@ -116,7 +116,7 @@ void RSP_ProcessDList()
 #endif
 
 #ifdef PRINT_DISPLAYLIST
-        if ((RSP.DList%PRINT_DISPLAYLIST_NUM) == 0) LOG(LOG_VERBOSE, "%s: w0=0x%x w1=0x%x\n", GBI_GetFuncName(GBI.current->type, RSP.cmd), w0, w1);
+        if ((RSP.DList%PRINT_DISPLAYLIST_NUM) == 0) printf("%s: w0=0x%x w1=0x%x\n", GBI_GetFuncName(GBI.current->type, RSP.cmd), w0, w1);
 #endif
 
         GBI.cmd[RSP.cmd]( w0, w1 );
@@ -127,7 +127,7 @@ void RSP_ProcessDList()
     }
 
 #ifdef PRINT_DISPLAYLIST
-        if ((RSP.DList%PRINT_DISPLAYLIST_NUM) == 0) LOG(LOG_VERBOSE, "END DISPLAY LIST %i \n", RSP.DList);
+        if ((RSP.DList%PRINT_DISPLAYLIST_NUM) == 0) printf("END DISPLAY LIST %i \n", RSP.DList);
 #endif
 
     RSP.busy = FALSE;
