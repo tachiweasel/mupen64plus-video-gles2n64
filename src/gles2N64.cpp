@@ -141,6 +141,7 @@ EXPORT void CALL ProcessDList(void)
     lastFrameTime = thisFrameTime;
 
     pthread_mutex_lock(&videoThreadControl.lock);
+    WaitForVideoThreadToBecomeIdle();
     if (videoThreadControl.state == VIDEO_THREAD_STATE_IDLE) {
         videoThreadControl.command.parameters.PrepareDList.gfxInfo = mainThreadGFXInfo;
         SendSyncCommand(VIDEO_THREAD_COMMAND_PREPARE_DLIST);
