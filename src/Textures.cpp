@@ -1,6 +1,8 @@
+#include <assert.h>
 #include <time.h>
 #include <stdlib.h>
 #include <memory.h>
+#include <math.h>
 
 #ifndef min
 #define min(a,b) ((a) < (b) ? (a) : (b))
@@ -370,8 +372,6 @@ int isTexCacheInit = 0;
 
 void TextureCache_Init()
 {
-    u32 dummyTexture[16] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-
     isTexCacheInit = 1;
     cache.current[0] = NULL;
     cache.current[1] = NULL;
@@ -408,7 +408,7 @@ void TextureCache_Init()
         glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, 64, 64, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, noise);
     }
 
-    cache.dummy = TextureCache_AddTop();
+    cache.dummy = TextureCache_AddTop(4, 4);
     cache.dummy->address = 0;
     cache.dummy->clampS = 1;
     cache.dummy->clampT = 1;
@@ -430,12 +430,20 @@ void TextureCache_Init()
     cache.dummy->textureBytes = 64;
     cache.dummy->tMem = 0;
 
-    glBindTexture( GL_TEXTURE_2D, cache.dummy->glName );
-    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, dummyTexture);
+    glGenTextures(1, &cache.glAtlasName);
+    glBindTexture(GL_TEXTURE_2D, cache.glAtlasName);
+    void *atlasBitmap = calloc(1, 1024 * 1024 * 4);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1024, 1024, 0, GL_RGBA, GL_UNSIGNED_BYTE, atlasBitmap);
+    free(atlasBitmap);
+    for (u32 i = 0; i < ATLAS_USAGE_BITMASK_SIZE(cache); i++)
+        cache.atlasUsageBitmask[i] = 0;
+
+    glBindTexture(GL_TEXTURE_2D, cache.glAtlasName);
 
     cache.cachedBytes = cache.dummy->textureBytes;
     TextureCache_ActivateDummy(0);
     TextureCache_ActivateDummy(1);
+
     CRC_BuildTable();
 }
 
@@ -475,7 +483,7 @@ void TextureCache_RemoveBottom()
         cache.hash.insert(cache.bottom->crc, NULL);
 #endif
 
-    glDeleteTextures( 1, &cache.bottom->glName );
+    // FIXME(tachiweasel): Remove from atlas.
     cache.cachedBytes -= cache.bottom->textureBytes;
 
     if (cache.bottom == cache.top)
@@ -524,14 +532,30 @@ void TextureCache_Remove( CachedTexture *texture )
         cache.hash.insert(texture->crc, NULL);
 #endif
 
-    glDeleteTextures( 1, &texture->glName );
+    // FIXME(tachiweasel): Remove from atlas.
     cache.cachedBytes -= texture->textureBytes;
     free( texture );
 
     cache.numCached--;
 }
 
-CachedTexture *TextureCache_AddTop()
+u32 TextureCache_BitmaskForHorizontalPositionInAtlas(u32 x, u32 widthInBlocks) {
+    return ((1 << (widthInBlocks + 1)) - 1) << x;
+}
+
+bool TextureCache_TextureFitsInAtlasAtBlockPosition(u32 x,
+                                                    u32 y,
+                                                    u32 widthInBlocks, 
+                                                    u32 heightInBlocks) {
+    u32 bitmask = TextureCache_BitmaskForHorizontalPositionInAtlas(x, widthInBlocks);
+    for (u32 yOffset = 0; yOffset <= heightInBlocks; yOffset++) {
+        if ((cache.atlasUsageBitmask[y + yOffset] & bitmask) != 0)
+            return false;
+    }
+    return true;
+}
+
+CachedTexture *TextureCache_AddTop(u32 width, u32 height)
 {
     while (cache.cachedBytes > TEXTURECACHE_MAX)
     {
@@ -543,7 +567,44 @@ CachedTexture *TextureCache_AddTop()
 
     CachedTexture *newtop = (CachedTexture*)malloc( sizeof( CachedTexture ) );
 
-    glGenTextures( 1, &newtop->glName );
+    // Find space for the new texture.
+    //
+    // Algorithm is first-fit.
+    printf("allocating texture, %dx%d\n", width, height);
+    u32 heightInBlocks = (height / ATLAS_BLOCK_SIZE) + (height % ATLAS_BLOCK_SIZE > 0 ? 1 : 0);
+    u32 widthInBlocks = (width / ATLAS_BLOCK_SIZE) + (width % ATLAS_BLOCK_SIZE > 0 ? 1 : 0);
+    assert(heightInBlocks > 0);
+    assert(widthInBlocks > 0);
+    for (u32 y = 0; y <= ATLAS_USAGE_BITMASK_SIZE(cache) - heightInBlocks; y++) {
+        for (u32 x = 0; x <= ATLAS_USAGE_BITMASK_SIZE(cache) - widthInBlocks; x++) {
+            if (TextureCache_TextureFitsInAtlasAtBlockPosition(x,
+                                                               y,
+                                                               widthInBlocks,
+                                                               heightInBlocks)) {
+                newtop->atlasXPos = x;
+                newtop->atlasYPos = y;
+                goto out;
+            }
+        }
+    }
+
+    fprintf(stderr, "Failed to allocate space for a new texture! :(\n");
+    abort();
+
+out:
+    u32 bitmask = TextureCache_BitmaskForHorizontalPositionInAtlas(newtop->atlasXPos,
+                                                                   widthInBlocks);
+    for (u32 y = 0; y < heightInBlocks; y++)
+        cache.atlasUsageBitmask[newtop->atlasYPos + y] |= bitmask;
+
+    // Print it out for debugging...
+    for (u32 y = 0; y < ATLAS_USAGE_BITMASK_SIZE(cache); y++) {
+        for (u32 x = 0; x < ATLAS_USAGE_BITMASK_SIZE(cache); x++) {
+            printf("%c", ((cache.atlasUsageBitmask[y] >> x) & 1) != 0 ? '*' : ' ');
+        }
+        printf("\n");
+    }
+    printf("\n");
 
     newtop->lower = cache.top;
     newtop->higher = NULL;
@@ -588,7 +649,8 @@ void TextureCache_Destroy()
         TextureCache_RemoveBottom();
 
     glDeleteTextures( 32, cache.glNoiseNames );
-    glDeleteTextures( 1, &cache.dummy->glName  );
+    glDeleteTextures( 1, &cache.glAtlasName );
+
 
 #ifdef __HASHMAP_OPT
     cache.hash.destroy();
@@ -693,6 +755,9 @@ void TextureCache_LoadBackground( CachedTexture *texInfo )
         }
     }
 
+    printf("allocating background texture format %x\n", texFormat.format);
+
+#if 0
     if (!config.texture.sai2x || (texFormat.format == FORMAT_I8 || texFormat.format == FORMAT_IA88))
     {
         glTexImage2D( GL_TEXTURE_2D, 0, glFormat, glWidth, glHeight, 0, glFormat, glType, dest);
@@ -715,6 +780,7 @@ void TextureCache_LoadBackground( CachedTexture *texInfo )
 
         free( scaledDest );
     }
+#endif
 
     free(dest);
     free(swapped);
@@ -864,12 +930,110 @@ void TextureCache_Load( CachedTexture *texInfo )
         }
     }
 
+    printf("allocating texture format %x\n", texFormat.format);
+
+#if 0
+    u32 *colorConversionBuffer = (u32 *)calloc(sizeof(u32), glWidth * glHeight);
+    u32 *colorConversionDest = colorConversionBuffer;
+    switch (texFormat.format) {
+    case FORMAT_RGBA4444:
+        {
+            u16 *colorConversionSource = (u16 *)dest;
+            for (int i = 0; i < glWidth * glHeight; i++) {
+                u32 color = (u32)*(colorConversionSource++);
+                *(colorConversionDest++) =
+                    ((color & 0xf) << 4) |
+                    (((color >> 4) & 0xf) << 12) |
+                    (((color >> 8) & 0xf) << 20) |
+                    (((color >> 12) & 0xf) << 28);
+            }
+            break;
+        }
+    case FORMAT_RGBA5551:
+        {
+            u16 *colorConversionSource = (u16 *)dest;
+            for (int i = 0; i < glWidth * glHeight; i++) {
+                u32 color = (u32)*(colorConversionSource++);
+                *(colorConversionDest++) =
+                    ((color & 0x1f) << 3) |
+                    (((color >> 5) & 0x1f) << 11) |
+                    (((color >> 10) & 0x1f) << 19) |
+                    (((color >> 15) != 0) ? 0xff000000 : 0);
+            }
+            break;
+        }
+    }
+
+#endif
+    glBindTexture(GL_TEXTURE_2D, cache.glAtlasName);
+#if 0
+    glTexSubImage2D(GL_TEXTURE_2D,
+                    0,
+                    texInfo->atlasXPos * ATLAS_BLOCK_SIZE,
+                    texInfo->atlasYPos * ATLAS_BLOCK_SIZE,
+                    glWidth,
+                    glHeight,
+                    GL_RGBA,
+                    GL_UNSIGNED_BYTE,
+                    colorConversionBuffer);
+#endif
+
+#if 0
+    free(colorConversionBuffer);
+#endif
+
     if (!config.texture.sai2x || (texFormat.format == FORMAT_I8) || (texFormat.format == FORMAT_IA88))
     {
 #ifdef PRINT_TEXTUREFORMAT
         printf("j=%u DEST=0x%x SIZE=%i F=0x%x, W=%i, H=%i, T=0x%x\n", j, dest, texInfo->textureBytes,glFormat, glWidth, glHeight, glType); fflush(stdout);
 #endif
+#if 0
         glTexImage2D( GL_TEXTURE_2D, 0, glFormat, glWidth, glHeight, 0, glFormat, glType, dest);
+#endif
+        for (int i = 0; i < 2; i++) {
+            glTexSubImage2D(GL_TEXTURE_2D,
+                            0,
+                            texInfo->atlasXPos * ATLAS_BLOCK_SIZE,
+                            texInfo->atlasYPos * ATLAS_BLOCK_SIZE,
+                            glWidth,
+                            glHeight,
+                            glFormat,
+                            glType,
+                            dest);
+
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, cache.glAtlasName);
+            printf("glTexSubImage2D(%d, %d, %d, %d, %d, %d) = %d\n",
+                   texInfo->atlasXPos * ATLAS_BLOCK_SIZE,
+                   texInfo->atlasYPos * ATLAS_BLOCK_SIZE,
+                   glWidth,
+                   glHeight,
+                   glFormat,
+                   glType,
+                   glGetError());
+        }
+
+#if 0
+        char *debugBuffer = (char *)malloc(1024 * 1024 * 4);
+        glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, debugBuffer);
+        FILE *f = fopen("texture.tga", "w");
+        char header[18] = { 0 };
+        header[2] = 2;
+        header[12] = 1024 & 0xff;
+        header[13] = (1024 >> 8) & 0xff;
+        header[14] = 1024 & 0xff;
+        header[15] = (1024 >> 8) & 0xff;
+        header[16] = 24;
+        fwrite(header, 1, sizeof(header), f);
+        for (int y = 1023; y >= 0; y--) {
+            for (int x = 0; x < 1024; x++) {
+                putc((int)(debugBuffer[(y * 1024 + x) * 4 + 0], f);
+                putc((int)(debugBuffer[(y * 1024 + x) * 4 + 1], f);
+                putc((int)(debugBuffer[(y * 1024 + x) * 4 + 2], f);
+            }
+        }
+        fclose(f);
+#endif
     }
     else
     {
@@ -945,7 +1109,6 @@ void TextureCache_ActivateTexture( u32 t, CachedTexture *texture )
 #endif
 
     glActiveTexture( GL_TEXTURE0 + t );
-    glBindTexture( GL_TEXTURE_2D, texture->glName );
 
     // Set filter mode. Almost always bilinear, but check anyways
     if ((gDP.otherMode.textureFilter == G_TF_BILERP) || (gDP.otherMode.textureFilter == G_TF_AVERAGE) || (config.texture.forceBilinear))
@@ -976,7 +1139,6 @@ void TextureCache_ActivateTexture( u32 t, CachedTexture *texture )
 void TextureCache_ActivateDummy( u32 t)
 {
     glActiveTexture(GL_TEXTURE0 + t);
-    glBindTexture(GL_TEXTURE_2D, cache.dummy->glName );
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 }
@@ -1042,9 +1204,8 @@ void TextureCache_UpdateBackground()
     cache.misses++;
 
     glActiveTexture(GL_TEXTURE0);
-    cache.current[0] = TextureCache_AddTop();
+    cache.current[0] = TextureCache_AddTop(gSP.bgImage.width, gSP.bgImage.height);
 
-    glBindTexture( GL_TEXTURE_2D, cache.current[0]->glName );
     cache.current[0]->address = gSP.bgImage.address;
     cache.current[0]->crc = crc;
     cache.current[0]->format = gSP.bgImage.format;
@@ -1245,14 +1406,12 @@ void TextureCache_Update( u32 t )
 
     glActiveTexture( GL_TEXTURE0 + t);
 
-    cache.current[t] = TextureCache_AddTop();
+    cache.current[t] = TextureCache_AddTop(width, height);
 
     if (cache.current[t] == NULL)
     {
         LOG(LOG_ERROR, "Texture Cache Failure\n");
     }
-
-    glBindTexture( GL_TEXTURE_2D, cache.current[t]->glName );
 
     cache.current[t]->address = gDP.textureImage.address;
     cache.current[t]->crc = crc;
@@ -1334,3 +1493,54 @@ void TextureCache_ActivateNoise(u32 t)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
 }
+
+void TextureCache_ConvertTextureCoord( SPVertex *destVertex, f32 s, f32 t ) {
+    if (cache.current[0] == NULL) {
+        destVertex->s = s;
+        destVertex->t = t;
+        return;
+    }
+
+/*
+"vTexCoord0 = (aTexCoord0 * (uTexScale[0] *                 \n"\
+"           uCacheShiftScale[0]) + (uCacheOffset[0] -       \n"\
+"           uTexOffset[0])) * uCacheScale[0];               \n"\
+"vTexCoord1 = (aTexCoord0 * (uTexScale[1] *                 \n"\
+"           uCacheShiftScale[1]) + (uCacheOffset[1] -       \n"\
+"           uTexOffset[1])) * uCacheScale[1];               \n"\
+*/
+
+    CachedTexture *texture = cache.current[0];
+#if 0
+    f32 computedS = ((s * gSP.texture.scales * texture->shiftScaleS) +
+            (texture->offsetS - gSP.textureTile[0]->fuls)) * texture->scaleS;
+    f32 computedT = ((t * gSP.texture.scalet * texture->shiftScaleT) +
+            (texture->offsetT - gSP.textureTile[0]->fult)) * texture->scaleT;
+#endif
+    destVertex->s = ((f32)(texture->atlasXPos * ATLAS_BLOCK_SIZE) +
+            fabs(fmodf(s, 1.0f)) * texture->realWidth) / 1024.0;
+    destVertex->t = ((f32)(texture->atlasYPos * ATLAS_BLOCK_SIZE) +
+            fabs(fmodf(t, 1.0f)) * texture->realHeight) / 1024.0;
+#if 0
+    if (s == 0.0)
+        destVertex->s = (f32)(texture->atlasXPos * ATLAS_BLOCK_SIZE) / 1024.0;
+    else
+        destVertex->s = (f32)(texture->atlasXPos * ATLAS_BLOCK_SIZE + texture->realWidth) / 1024.0;
+    if (t == 0.0)
+        destVertex->t = (f32)(texture->atlasYPos * ATLAS_BLOCK_SIZE) / 1024.0;
+    else {
+        destVertex->t = (f32)(texture->atlasYPos * ATLAS_BLOCK_SIZE + texture->realHeight) /
+            1024.0;
+    }
+#endif
+    printf("converted %f,%f to %f,%f atlasXPos=%d atlasYPos=%d realwidth=%d realheight=%d\n",
+           s,
+           t,
+           destVertex->s,
+           destVertex->t,
+           texture->atlasXPos,
+           texture->atlasYPos,
+           texture->realWidth,
+           texture->realHeight);
+}
+

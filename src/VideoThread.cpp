@@ -97,7 +97,8 @@ void InitVideoThreadSystemState(VideoThreadSystemState *state)
 void CopyVideoThreadSystemStateFromGFXInfo(VideoThreadSystemState *state, GFX_INFO *info)
 {
     memcpy(state->HEADER, info->HEADER, 0x40);
-    memcpy(state->RDRAM, info->RDRAM, 4 * 1024 * 1024);
+    //memcpy(state->RDRAM, info->RDRAM, 4 * 1024 * 1024);
+    state->RDRAM = info->RDRAM;
     memcpy(state->DMEM, info->DMEM, 4 * 1024);
     memcpy(state->IMEM, info->IMEM, 4 * 1024);
 

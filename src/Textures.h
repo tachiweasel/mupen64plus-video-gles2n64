@@ -6,9 +6,13 @@
 #include "Hash.h"
 #include "convert.h"
 
+struct SPVertex;
+
 struct CachedTexture
 {
-    GLuint  glName;
+    u32     atlasXPos;
+    u32     atlasYPos;
+
     u32     address;
     u32     crc;
     float   offsetS, offsetT;
@@ -35,6 +39,10 @@ struct CachedTexture
 #define TEXTURECACHE_MAX (8 * 1024 * 1024)
 #define TEXTUREBUFFER_SIZE (512 * 1024)
 
+#define ATLAS_USAGE_BITMASK_SIZE(cache) \
+    (sizeof(cache.atlasUsageBitmask) / sizeof(cache.atlasUsageBitmask[0]))
+#define ATLAS_BLOCK_SIZE    32
+
 struct TextureCache
 {
     CachedTexture   *current[2];
@@ -45,9 +53,10 @@ struct TextureCache
     u32             numCached;
     u32             hits, misses;
     GLuint          glNoiseNames[32];
+    GLuint          glAtlasName;
+    u32             atlasUsageBitmask[32];
 
     HashMap<CachedTexture>  hash;
-
 };
 
 extern TextureCache cache;
@@ -75,7 +84,7 @@ inline u32 powof( u32 dim )
     return i;
 }
 
-CachedTexture *TextureCache_AddTop();
+CachedTexture *TextureCache_AddTop( u32 width, u32 height );
 void TextureCache_MoveToTop( CachedTexture *newtop );
 void TextureCache_Remove( CachedTexture *texture );
 void TextureCache_RemoveBottom();
@@ -86,6 +95,7 @@ void TextureCache_ActivateTexture( u32 t, CachedTexture *texture );
 void TextureCache_ActivateNoise( u32 t );
 void TextureCache_ActivateDummy( u32 t );
 bool TextureCache_Verify();
+void TextureCache_ConvertTextureCoord( SPVertex *destVertex, f32 s, f32 t );
 
 #endif
 

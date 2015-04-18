@@ -302,13 +302,28 @@ void gDPSetDepthSource( u32 source )
 
 void gDPSetRenderMode( u32 mode1, u32 mode2 )
 {
+    //printf("SetRenderMode(%x)\n", mode1 | mode2);
+
+#if 0
+    printf("BEFORE gDPSetRenderMode( %s%s%s%s%s | %s | %s%s%s );\n",
+        gDP.otherMode.AAEnable ? "AA_EN | " : "",
+        gDP.otherMode.depthCompare ? "Z_CMP | " : "",
+        gDP.otherMode.depthUpdate ? "Z_UPD | " : "",
+        gDP.otherMode.imageRead ? "IM_RD | " : "",
+        CvgDestText[gDP.otherMode.cvgDest],
+        DepthModeText[gDP.otherMode.depthMode],
+        gDP.otherMode.cvgXAlpha ? "CVG_X_ALPHA | " : "",
+        gDP.otherMode.alphaCvgSel ? "ALPHA_CVG_SEL | " : "",
+        gDP.otherMode.forceBlender ? "FORCE_BL" : "" );
+#endif
+
     gDP.otherMode.l &= 0x00000007;
     gDP.otherMode.l |= mode1 | mode2;
     gDP.changed |= CHANGED_RENDERMODE;
 
 #ifdef DEBUG
     // THIS IS INCOMPLETE!!!
-    DebugMsg( DEBUG_HIGH | DEBUG_HANDLED, "gDPSetRenderMode( %s%s%s%s%s | %s | %s%s%s );\n",
+    printf("AFTER gDPSetRenderMode( %s%s%s%s%s | %s | %s%s%s );\n",
         gDP.otherMode.AAEnable ? "AA_EN | " : "",
         gDP.otherMode.depthCompare ? "Z_CMP | " : "",
         gDP.otherMode.depthUpdate ? "Z_UPD | " : "",
@@ -323,12 +338,8 @@ void gDPSetRenderMode( u32 mode1, u32 mode2 )
 
 void gDPSetCombine( s32 muxs0, s32 muxs1 )
 {
-    gDP.combine.muxs0 = muxs0;
-    gDP.combine.muxs1 = muxs1;
-    gDP.changed |= CHANGED_COMBINE;
-
-#ifdef DEBUG
-    DebugMsg( DEBUG_HIGH | DEBUG_HANDLED | DEBUG_COMBINE, "gDPSetCombine( %s, %s, %s, %s, %s, %s, %s, %s,\n",
+#if 0
+    printf("BEFORE gDPSetCombine( %s, %s, %s, %s, %s, %s, %s, %s,\n",
         saRGBText[gDP.combine.saRGB0],
         sbRGBText[gDP.combine.sbRGB0],
         mRGBText[gDP.combine.mRGB0],
@@ -338,7 +349,33 @@ void gDPSetCombine( s32 muxs0, s32 muxs1 )
         mAText[gDP.combine.mA0],
         aAText[gDP.combine.aA0] );
 
-    DebugMsg( DEBUG_HIGH | DEBUG_HANDLED | DEBUG_COMBINE, "               %s, %s, %s, %s, %s, %s, %s, %s );\n",
+    printf("BEFORE                %s, %s, %s, %s, %s, %s, %s, %s );\n",
+        saRGBText[gDP.combine.saRGB1],
+        sbRGBText[gDP.combine.sbRGB1],
+        mRGBText[gDP.combine.mRGB1],
+        aRGBText[gDP.combine.aRGB1],
+        saAText[gDP.combine.saA1],
+        sbAText[gDP.combine.sbA1],
+        mAText[gDP.combine.mA1],
+        aAText[gDP.combine.aA1] );
+#endif
+
+    gDP.combine.muxs0 = muxs0;
+    gDP.combine.muxs1 = muxs1;
+    gDP.changed |= CHANGED_COMBINE;
+
+#ifdef DEBUG
+    printf("AFTER gDPSetCombine( %s, %s, %s, %s, %s, %s, %s, %s,\n",
+        saRGBText[gDP.combine.saRGB0],
+        sbRGBText[gDP.combine.sbRGB0],
+        mRGBText[gDP.combine.mRGB0],
+        aRGBText[gDP.combine.aRGB0],
+        saAText[gDP.combine.saA0],
+        sbAText[gDP.combine.sbA0],
+        mAText[gDP.combine.mA0],
+        aAText[gDP.combine.aA0] );
+
+    printf("AFTER                %s, %s, %s, %s, %s, %s, %s, %s );\n",
         saRGBText[gDP.combine.saRGB1],
         sbRGBText[gDP.combine.sbRGB1],
         mRGBText[gDP.combine.mRGB1],

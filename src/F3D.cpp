@@ -264,6 +264,7 @@ void F3D_SetOtherMode_H( u32 w0, u32 w1 )
 
 void F3D_SetOtherMode_L( u32 w0, u32 w1 )
 {
+    //printf("SETOTHERMODE_L(%x)\n", _SHIFTR(w0, 8, 8));
     switch (_SHIFTR( w0, 8, 8 ))
     {
         case G_MDSFT_ALPHACOMPARE:

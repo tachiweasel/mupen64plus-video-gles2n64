@@ -17,6 +17,7 @@
 #include "S2DEX.h"
 #include "VI.h"
 #include "DepthBuffer.h"
+#include "Textures.h"
 #include "Config.h"
 
 //Note: 0xC0 is used by 1080 alot, its an unknown command.
@@ -28,7 +29,7 @@ extern char uc_str[256];
 
 void gSPCombineMatrices();
 
-//#ifdef __TRIBUFFER_OPT
+#ifdef __TRIBUFFER_OPT
 void __indexmap_init()
 {
     memset(OGL.triangles.indexmapinv, 0xFF, VERTBUFF_SIZE*sizeof(u32));
@@ -150,7 +151,7 @@ u32 __indexmap_getnew(u32 index, u32 num)
 
     return ind;
 }
-//#endif
+#endif
 
 void gSPTriangle(s32 v0, s32 v1, s32 v2)
 {
@@ -394,6 +395,7 @@ void gSPProcessVertex4(u32 v)
         {
             gSPTransformNormal4(v, gSP.matrix.projection);
 
+#if 0
             if (gSP.geometryMode & G_TEXTURE_GEN_LINEAR)
             {
                 OGL.triangles.vertices[v].s = acosf(OGL.triangles.vertices[v].nx) * 325.94931f;
@@ -416,6 +418,7 @@ void gSPProcessVertex4(u32 v)
                 OGL.triangles.vertices[v+3].s = (OGL.triangles.vertices[v+3].nx + 1.0f) * 512.0f;
                 OGL.triangles.vertices[v+3].t = (OGL.triangles.vertices[v+3].ny + 1.0f) * 512.0f;
             }
+#endif
         }
     }
 
@@ -538,6 +541,7 @@ void gSPProcessVertex( u32 v )
         {
             TransformVectorNormalize(&OGL.triangles.vertices[v].nx, gSP.matrix.projection);
 
+#if 0
             if (gSP.geometryMode & G_TEXTURE_GEN_LINEAR)
             {
                 OGL.triangles.vertices[v].s = acosf(OGL.triangles.vertices[v].nx) * 325.94931f;
@@ -548,6 +552,7 @@ void gSPProcessVertex( u32 v )
                 OGL.triangles.vertices[v].s = (OGL.triangles.vertices[v].nx + 1.0f) * 512.0f;
                 OGL.triangles.vertices[v].t = (OGL.triangles.vertices[v].ny + 1.0f) * 512.0f;
             }
+#endif
         }
     }
 }
@@ -778,8 +783,9 @@ void gSPVertex( u32 v, u32 n, u32 v0 )
                 OGL.triangles.vertices[v+j].y = vertex->y;
                 OGL.triangles.vertices[v+j].z = vertex->z;
                 //OGL.triangles.vertices[i+j].flag = vertex->flag;
-                OGL.triangles.vertices[v+j].s = _FIXED2FLOAT( vertex->s, 5 );
-                OGL.triangles.vertices[v+j].t = _FIXED2FLOAT( vertex->t, 5 );
+                TextureCache_ConvertTextureCoord(&OGL.triangles.vertices[v+j],
+                                                 _FIXED2FLOAT( vertex->s, 5 ),
+                                                 _FIXED2FLOAT( vertex->t, 5 ));
                 if (gSP.geometryMode & G_LIGHTING)
                 {
                     OGL.triangles.vertices[v+j].nx = vertex->normal.x;
@@ -805,11 +811,13 @@ void gSPVertex( u32 v, u32 n, u32 v0 )
 #ifdef __TRIBUFFER_OPT
             v = __indexmap_getnew(v, 1);
 #endif
+
             OGL.triangles.vertices[v].x = vertex->x;
             OGL.triangles.vertices[v].y = vertex->y;
             OGL.triangles.vertices[v].z = vertex->z;
-            OGL.triangles.vertices[v].s = _FIXED2FLOAT( vertex->s, 5 );
-            OGL.triangles.vertices[v].t = _FIXED2FLOAT( vertex->t, 5 );
+            TextureCache_ConvertTextureCoord(&OGL.triangles.vertices[v],
+                                             _FIXED2FLOAT( vertex->s, 5 ),
+                                             _FIXED2FLOAT( vertex->t, 5 ));
             if (gSP.geometryMode & G_LIGHTING)
             {
                 OGL.triangles.vertices[v].nx = vertex->normal.x;
@@ -830,7 +838,7 @@ void gSPVertex( u32 v, u32 n, u32 v0 )
     }
     else
     {
-        LOG(LOG_ERROR, "Using Vertex outside buffer v0=%i, n=%i\n", v0, n);
+        printf("*** Using Vertex outside buffer v0=%i, n=%i\n", v0, n);
     }
 
 }
@@ -866,8 +874,9 @@ void gSPCIVertex( u32 v, u32 n, u32 v0 )
                 OGL.triangles.vertices[v+j].x = vertex->x;
                 OGL.triangles.vertices[v+j].y = vertex->y;
                 OGL.triangles.vertices[v+j].z = vertex->z;
-                OGL.triangles.vertices[v+j].s = _FIXED2FLOAT( vertex->s, 5 );
-                OGL.triangles.vertices[v+j].t = _FIXED2FLOAT( vertex->t, 5 );
+                TextureCache_ConvertTextureCoord(&OGL.triangles.vertices[v+j],
+                                                 _FIXED2FLOAT( vertex->s, 5 ),
+                                                 _FIXED2FLOAT( vertex->t, 5 ));
                 u8 *color = &RDRAM[gSP.vertexColorBase + (vertex->ci & 0xff)];
 
                 if (gSP.geometryMode & G_LIGHTING)
@@ -898,8 +907,9 @@ void gSPCIVertex( u32 v, u32 n, u32 v0 )
             OGL.triangles.vertices[v].x = vertex->x;
             OGL.triangles.vertices[v].y = vertex->y;
             OGL.triangles.vertices[v].z = vertex->z;
-            OGL.triangles.vertices[v].s = _FIXED2FLOAT( vertex->s, 5 );
-            OGL.triangles.vertices[v].t = _FIXED2FLOAT( vertex->t, 5 );
+            TextureCache_ConvertTextureCoord(&OGL.triangles.vertices[v],
+                                             _FIXED2FLOAT( vertex->s, 5 ),
+                                             _FIXED2FLOAT( vertex->t, 5 ));
             u8 *color = &RDRAM[gSP.vertexColorBase + (vertex->ci & 0xff)];
 
             if (gSP.geometryMode & G_LIGHTING)
@@ -1185,12 +1195,14 @@ void gSPDMATriangles( u32 tris, u32 n )
         s32 v0 = triangles->v0;
         s32 v1 = triangles->v1;
         s32 v2 = triangles->v2;
+#if 0
         OGL.triangles.vertices[v0].s = _FIXED2FLOAT( triangles->s0, 5 );
         OGL.triangles.vertices[v0].t = _FIXED2FLOAT( triangles->t0, 5 );
         OGL.triangles.vertices[v1].s = _FIXED2FLOAT( triangles->s1, 5 );
         OGL.triangles.vertices[v1].t = _FIXED2FLOAT( triangles->t1, 5 );
         OGL.triangles.vertices[v2].s = _FIXED2FLOAT( triangles->s2, 5 );
         OGL.triangles.vertices[v2].t = _FIXED2FLOAT( triangles->t2, 5 );
+#endif
         gSPTriangle(triangles->v0, triangles->v1, triangles->v2);
         triangles++;
     }
@@ -1345,8 +1357,10 @@ void gSPModifyVertex( u32 vtx, u32 where, u32 val )
             OGL.triangles.vertices[v].a = _SHIFTR( val, 0, 8 ) * 0.0039215689f;
             break;
         case G_MWO_POINT_ST:
+#if 0
             OGL.triangles.vertices[v].s = _FIXED2FLOAT( (s16)_SHIFTR( val, 16, 16 ), 5 );
             OGL.triangles.vertices[v].t = _FIXED2FLOAT( (s16)_SHIFTR( val, 0, 16 ), 5 );
+#endif
             break;
         case G_MWO_POINT_XYSCREEN:
             break;
@@ -1430,6 +1444,7 @@ void gSPGeometryMode( u32 clear, u32 set )
 
 void gSPSetGeometryMode( u32 mode )
 {
+    //printf("SetGeometryMode(%x)\n", mode);
     gSP.geometryMode |= mode;
     gSP.changed |= CHANGED_GEOMETRYMODE;
 }

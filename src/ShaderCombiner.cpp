@@ -133,12 +133,8 @@ const char *_vert = "                                       \n"\
 "                                                           \n"\
 "if (uRenderState == 1.0)                                   \n"\
 "{                                                          \n"\
-"vTexCoord0 = (aTexCoord0 * (uTexScale[0] *                 \n"\
-"           uCacheShiftScale[0]) + (uCacheOffset[0] -       \n"\
-"           uTexOffset[0])) * uCacheScale[0];               \n"\
-"vTexCoord1 = (aTexCoord0 * (uTexScale[1] *                 \n"\
-"           uCacheShiftScale[1]) + (uCacheOffset[1] -       \n"\
-"           uTexOffset[1])) * uCacheScale[1];               \n"\
+"vTexCoord0 = aTexCoord0;                                   \n"\
+"vTexCoord1 = aTexCoord0;                                   \n"\
 "}                                                          \n"\
 "else                                                       \n"\
 "{                                                          \n"\

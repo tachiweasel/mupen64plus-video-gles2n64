@@ -1006,10 +1006,16 @@ void OGL_UpdateStates()
 #else
                 TextureCache_Update(0);
 #endif
-                SC_ForceUniform2f(uTexOffset[0], gSP.textureTile[0]->fuls, gSP.textureTile[0]->fult);
-                SC_ForceUniform2f(uCacheShiftScale[0], cache.current[0]->shiftScaleS, cache.current[0]->shiftScaleT);
-                SC_ForceUniform2f(uCacheScale[0], cache.current[0]->scaleS, cache.current[0]->scaleT);
-                SC_ForceUniform2f(uCacheOffset[0], cache.current[0]->offsetS, cache.current[0]->offsetT);
+                scProgramCurrent->uniforms.uTexOffset[0].val[0] = gSP.textureTile[0]->fuls;
+                scProgramCurrent->uniforms.uTexOffset[0].val[1] = gSP.textureTile[0]->fult;
+                scProgramCurrent->uniforms.uCacheShiftScale[0].val[0] =
+                    cache.current[0]->shiftScaleS;
+                scProgramCurrent->uniforms.uCacheShiftScale[0].val[1] =
+                    cache.current[0]->shiftScaleT;
+                scProgramCurrent->uniforms.uCacheScale[0].val[0] = cache.current[0]->scaleS;
+                scProgramCurrent->uniforms.uCacheScale[0].val[1] = cache.current[0]->scaleT;
+                scProgramCurrent->uniforms.uCacheOffset[0].val[0] = cache.current[0]->offsetS;
+                scProgramCurrent->uniforms.uCacheOffset[0].val[1] = cache.current[0]->offsetT;
             }
             //else TextureCache_ActivateDummy(0);
 #else
@@ -1028,10 +1034,12 @@ void OGL_UpdateStates()
 #else
                 TextureCache_Update(1);
 #endif
+#if 0
                 SC_ForceUniform2f(uTexOffset[1], gSP.textureTile[1]->fuls, gSP.textureTile[1]->fult);
                 SC_ForceUniform2f(uCacheShiftScale[1], cache.current[1]->shiftScaleS, cache.current[1]->shiftScaleT);
                 SC_ForceUniform2f(uCacheScale[1], cache.current[1]->scaleS, cache.current[1]->scaleT);
                 SC_ForceUniform2f(uCacheOffset[1], cache.current[1]->offsetS, cache.current[1]->offsetT);
+#endif
             }
             //else TextureCache_ActivateDummy(1);
 #else

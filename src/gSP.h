@@ -1,9 +1,12 @@
 #ifndef GSP_H
 #define GSP_H
 
+#include <stdio.h>
+
 #include "Types.h"
 #include "GBI.h"
 #include "gDP.h"
+#include "F3D.h"
 
 #define CHANGED_VIEWPORT        0x01
 #define CHANGED_MATRIX          0x02
@@ -12,6 +15,8 @@
 #define CHANGED_TEXTURE         0x10
 #define CHANGED_FOGPOSITION     0x20
 #define CHANGED_TEXTURESCALE    0x40
+
+#define __TRIBUFFER_OPT     1
 
 #if 0
 	#ifdef __TRIBUFFER_OPT
@@ -57,27 +62,7 @@ if \
 ( \
     ( \
          (config.tribufferOpt) && \
-         (OGL.triangles.num > 1000) || \
-         ( \
-             (RSP.nextCmd != G_NOOP) && \
-             (RSP.nextCmd != G_RDPNOOP) && \
-             (RSP.nextCmd != G_MOVEMEM) && \
-             (RSP.nextCmd != G_ENDDL) && \
-             (RSP.nextCmd != G_DL) && \
-             (RSP.nextCmd != G_VTXCOLORBASE) && \
-             (RSP.nextCmd != G_TRI1) && \
-             (RSP.nextCmd != G_TRI2) && \
-             (RSP.nextCmd != G_TRI4) && \
-             (RSP.nextCmd != G_QUAD) && \
-             (RSP.nextCmd != G_VTX) && \
-             (RSP.nextCmd != G_MTX) \
-         ) \
-    ) || \
-    ( \
-        (RSP.nextCmd != G_TRI1) && \
-        (RSP.nextCmd != G_TRI2) && \
-        (RSP.nextCmd != G_TRI4) && \
-        (RSP.nextCmd != G_QUAD) \
+         (OGL.triangles.num > 1000 || gSPCommandRequiresFlush(RSP.nextCmd)) \
     ) \
 ) \
 { \
@@ -241,6 +226,50 @@ void gSP4Triangles(const s32 v00, const s32 v01, const s32 v02,
                     const s32 v20, const s32 v21, const s32 v22,
                     const s32 v30, const s32 v31, const s32 v32 );
 
+
+inline bool gSPCommandRequiresFlush(u32 cmd) {
+    if (cmd == G_TRI1 ||
+            cmd == G_TRI2 ||
+            cmd == G_TRI4 ||
+            cmd == G_QUAD ||
+            cmd == G_NOOP ||
+            cmd == G_RDPNOOP ||
+            cmd == G_MTX ||
+            cmd == G_VTX ||
+            cmd == F3D_DL ||
+            cmd == F3D_POPMTX ||
+            cmd == F3D_ENDDL ||
+            cmd == G_RDPPIPESYNC ||
+            cmd == G_TEXRECT ||             // texture rectangle, should be batchable
+            cmd == G_SETTILESIZE ||         // tile size, atlasing should take care of it
+            cmd == G_SETTIMG ||             // texture image, ditto
+            cmd == F3D_TEXTURE ||           // texture metadata, ditto
+            cmd == G_SETTILE ||             // texture upload stuff, ditto
+            cmd == G_SETPRIMCOLOR ||
+            cmd == F3D_SETOTHERMODE_L ||
+            cmd == F3D_SETGEOMETRYMODE) {
+        return false;
+    }
+    /*if (cmd == G_TRI1 || cmd == G_TRI2 || cmd == G_TRI4 || cmd == G_QUAD || cmd == G_NOOP ||
+            cmd == G_RDPNOOP || cmd == G_MTX || cmd == G_VTX || cmd == G_SETTILE ||
+            cmd == G_TEXRECT || cmd == F3D_DL || cmd == G_SETPRIMCOLOR || cmd == G_RDPPIPESYNC ||
+            cmd == G_SETTILESIZE || cmd == F3D_MOVEMEM || cmd == G_SETTIMG ||
+            cmd == G_SETCOMBINE || cmd == F3D_TEXTURE || cmd == F3D_SETOTHERMODE_L ||
+            cmd == F3D_SETGEOMETRYMODE || cmd == F3D_ENDDL || cmd == F3D_POPMTX) {
+        return false;
+    }*/
+    /*if (cmd == G_TRI1 || cmd == G_TRI2 || cmd == G_TRI4 || cmd == G_QUAD || cmd == G_NOOP ||
+            cmd == G_RDPNOOP || cmd == G_MTX || cmd == G_VTX) {
+        return false;
+    }*/
+    /*if (cmd == G_TRI1 || cmd == G_TRI2 || cmd == G_TRI4 || cmd == G_QUAD || cmd == G_NOOP ||
+            cmd == G_RDPNOOP || cmd == G_MTX) {
+        return false;
+    }*/
+
+    //printf("flush required due to %s\n", GBI_GetFuncName(GBI.current->type, cmd));
+    return true;
+}
 
 //#ifdef __TRIBUFFER_OPT
 void __indexmap_init();
