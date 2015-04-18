@@ -932,39 +932,6 @@ void TextureCache_Load( CachedTexture *texInfo )
 
     printf("allocating texture format %x\n", texFormat.format);
 
-#if 0
-    u32 *colorConversionBuffer = (u32 *)calloc(sizeof(u32), glWidth * glHeight);
-    u32 *colorConversionDest = colorConversionBuffer;
-    switch (texFormat.format) {
-    case FORMAT_RGBA4444:
-        {
-            u16 *colorConversionSource = (u16 *)dest;
-            for (int i = 0; i < glWidth * glHeight; i++) {
-                u32 color = (u32)*(colorConversionSource++);
-                *(colorConversionDest++) =
-                    ((color & 0xf) << 4) |
-                    (((color >> 4) & 0xf) << 12) |
-                    (((color >> 8) & 0xf) << 20) |
-                    (((color >> 12) & 0xf) << 28);
-            }
-            break;
-        }
-    case FORMAT_RGBA5551:
-        {
-            u16 *colorConversionSource = (u16 *)dest;
-            for (int i = 0; i < glWidth * glHeight; i++) {
-                u32 color = (u32)*(colorConversionSource++);
-                *(colorConversionDest++) =
-                    ((color & 0x1f) << 3) |
-                    (((color >> 5) & 0x1f) << 11) |
-                    (((color >> 10) & 0x1f) << 19) |
-                    (((color >> 15) != 0) ? 0xff000000 : 0);
-            }
-            break;
-        }
-    }
-
-#endif
     glBindTexture(GL_TEXTURE_2D, cache.glAtlasName);
 #if 0
     glTexSubImage2D(GL_TEXTURE_2D,

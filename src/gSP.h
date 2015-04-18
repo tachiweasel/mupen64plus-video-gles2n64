@@ -240,6 +240,26 @@ inline bool gSPCommandRequiresFlush(u32 cmd) {
             cmd == F3D_POPMTX ||
             cmd == F3D_ENDDL ||
             cmd == G_RDPPIPESYNC ||
+            cmd == G_SETTILESIZE ||         // tile size, atlasing should take care of it
+            cmd == G_SETTIMG ||             // texture image, ditto
+            cmd == F3D_TEXTURE ||           // texture metadata, ditto
+            cmd == G_SETTILE)               // texture upload stuff, ditto
+        return false;
+
+    // Ideal:
+#if 0
+    if (cmd == G_TRI1 ||
+            cmd == G_TRI2 ||
+            cmd == G_TRI4 ||
+            cmd == G_QUAD ||
+            cmd == G_NOOP ||
+            cmd == G_RDPNOOP ||
+            cmd == G_MTX ||
+            cmd == G_VTX ||
+            cmd == F3D_DL ||
+            cmd == F3D_POPMTX ||
+            cmd == F3D_ENDDL ||
+            cmd == G_RDPPIPESYNC ||
             cmd == G_TEXRECT ||             // texture rectangle, should be batchable
             cmd == G_SETTILESIZE ||         // tile size, atlasing should take care of it
             cmd == G_SETTIMG ||             // texture image, ditto
@@ -250,22 +270,7 @@ inline bool gSPCommandRequiresFlush(u32 cmd) {
             cmd == F3D_SETGEOMETRYMODE) {
         return false;
     }
-    /*if (cmd == G_TRI1 || cmd == G_TRI2 || cmd == G_TRI4 || cmd == G_QUAD || cmd == G_NOOP ||
-            cmd == G_RDPNOOP || cmd == G_MTX || cmd == G_VTX || cmd == G_SETTILE ||
-            cmd == G_TEXRECT || cmd == F3D_DL || cmd == G_SETPRIMCOLOR || cmd == G_RDPPIPESYNC ||
-            cmd == G_SETTILESIZE || cmd == F3D_MOVEMEM || cmd == G_SETTIMG ||
-            cmd == G_SETCOMBINE || cmd == F3D_TEXTURE || cmd == F3D_SETOTHERMODE_L ||
-            cmd == F3D_SETGEOMETRYMODE || cmd == F3D_ENDDL || cmd == F3D_POPMTX) {
-        return false;
-    }*/
-    /*if (cmd == G_TRI1 || cmd == G_TRI2 || cmd == G_TRI4 || cmd == G_QUAD || cmd == G_NOOP ||
-            cmd == G_RDPNOOP || cmd == G_MTX || cmd == G_VTX) {
-        return false;
-    }*/
-    /*if (cmd == G_TRI1 || cmd == G_TRI2 || cmd == G_TRI4 || cmd == G_QUAD || cmd == G_NOOP ||
-            cmd == G_RDPNOOP || cmd == G_MTX) {
-        return false;
-    }*/
+#endif
 
     //printf("flush required due to %s\n", GBI_GetFuncName(GBI.current->type, cmd));
     return true;

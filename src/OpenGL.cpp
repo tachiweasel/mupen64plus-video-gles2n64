@@ -1233,7 +1233,7 @@ void OGL_DrawTriangles()
     }
 
     printf("begin texture coordinate list\n");
-    for (int i = 0; i < OGL.triangles.num; i++)
+    for (int i = 0; i < 10 && i < OGL.triangles.num; i++)
         printf("(%f,%f)\n", OGL.triangles.vertices[i].s, OGL.triangles.vertices[i].t);
     printf("end texture coordinate list\n");
 
