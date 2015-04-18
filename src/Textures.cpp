@@ -1484,10 +1484,17 @@ void TextureCache_ConvertTextureCoord( SPVertex *destVertex, f32 s, f32 t ) {
     f32 computedT = ((t * gSP.texture.scalet * texture->shiftScaleT) +
             (texture->offsetT - gSP.textureTile[0]->fult)) * texture->scaleT;
 #endif
+
     destVertex->s = ((f32)(texture->atlasXPos * ATLAS_BLOCK_SIZE) +
             fabs(fmodf(s, 1.0f)) * texture->realWidth) / 1024.0;
     destVertex->t = ((f32)(texture->atlasYPos * ATLAS_BLOCK_SIZE) +
             fabs(fmodf(t, 1.0f)) * texture->realHeight) / 1024.0;
+
+#if 0
+    destVertex->s = s;
+    destVertex->t = t;
+#endif
+
 #if 0
     if (s == 0.0)
         destVertex->s = (f32)(texture->atlasXPos * ATLAS_BLOCK_SIZE) / 1024.0;
