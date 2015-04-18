@@ -1224,6 +1224,11 @@ void OGL_DrawTriangles()
         OGL.renderState = RS_TRIANGLE;
     }
 
+    printf("begin texture coordinate list\n");
+    for (int i = 0; i < OGL.triangles.num; i++)
+        printf("(%f,%f)\n", OGL.triangles.vertices[i].s, OGL.triangles.vertices[i].t);
+    printf("end texture coordinate list\n");
+
     glDrawElements(GL_TRIANGLES, OGL.triangles.num, GL_UNSIGNED_BYTE, OGL.triangles.elements);
     OGL.triangles.num = 0;
 
