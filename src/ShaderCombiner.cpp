@@ -492,8 +492,8 @@ void _force_uniforms()
     SC_ForceUniform1i(uTex0, 0);
     SC_ForceUniform1i(uTex1, 1);
     SC_ForceUniform1i(uNoise, 2);
-    SC_ForceUniform4fv(uEnvColor, &gDP.envColor.r);
-    SC_ForceUniform4fv(uPrimColor, &gDP.primColor.r);
+    //SC_ForceUniform4fv(uEnvColor, &gDP.envColor.r);
+    //SC_ForceUniform4fv(uPrimColor, &gDP.primColor.r);
     SC_ForceUniform1f(uPrimLODFrac, gDP.primColor.l);
     SC_ForceUniform1f(uK4, gDP.convert.k4);
     SC_ForceUniform1f(uK5, gDP.convert.k5);
@@ -549,8 +549,8 @@ void _force_uniforms()
 
 void _update_uniforms()
 {
-    SC_SetUniform4fv(uEnvColor, &gDP.envColor.r);
-    SC_SetUniform4fv(uPrimColor, &gDP.primColor.r);
+    //SC_SetUniform4fv(uEnvColor, &gDP.envColor.r);
+    //SC_SetUniform4fv(uPrimColor, &gDP.primColor.r);
     SC_SetUniform1f(uPrimLODFrac, gDP.primColor.l);
     SC_SetUniform4fv(uFogColor, &gDP.fogColor.r);
     SC_SetUniform1i(uEnableFog, (config.enableFog && (gSP.geometryMode & G_FOG)));

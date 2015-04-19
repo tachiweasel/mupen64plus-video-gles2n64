@@ -1016,6 +1016,7 @@ void OGL_UpdateStates()
                 scProgramCurrent->uniforms.uCacheScale[0].val[1] = cache.current[0]->scaleT;
                 scProgramCurrent->uniforms.uCacheOffset[0].val[0] = cache.current[0]->offsetS;
                 scProgramCurrent->uniforms.uCacheOffset[0].val[1] = cache.current[0]->offsetT;
+                glBindTexture(GL_TEXTURE_2D, cache.glAtlasName);
             }
             //else TextureCache_ActivateDummy(0);
 #else
@@ -1232,10 +1233,19 @@ void OGL_DrawTriangles()
         OGL.renderState = RS_TRIANGLE;
     }
 
+#if 0
+    for (int i = 0; i < VERTBUFF_SIZE; i++) {
+        OGL.triangles.vertices[i].r = 1.0;
+        OGL.triangles.vertices[i].g = 1.0;
+        OGL.triangles.vertices[i].b = 1.0;
+        OGL.triangles.vertices[i].a = 1.0;
+    }
+
     printf("begin texture coordinate list\n");
     for (int i = 0; i < 10 && i < OGL.triangles.num; i++)
         printf("(%f,%f)\n", OGL.triangles.vertices[i].s, OGL.triangles.vertices[i].t);
     printf("end texture coordinate list\n");
+#endif
 
     glDrawElements(GL_TRIANGLES, OGL.triangles.num, GL_UNSIGNED_BYTE, OGL.triangles.elements);
     OGL.triangles.num = 0;
@@ -1355,6 +1365,7 @@ void OGL_DrawRect( int ulx, int uly, int lrx, int lry, float *color)
 
 void OGL_DrawTexturedRect( float ulx, float uly, float lrx, float lry, float uls, float ult, float lrs, float lrt, bool flip )
 {
+    printf("DrawTexturedRect\n");
     if (config.hackBanjoTooie)
     {
         if (gDP.textureImage.width == gDP.colorImage.width &&

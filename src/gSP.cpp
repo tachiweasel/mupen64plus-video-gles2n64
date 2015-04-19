@@ -1419,6 +1419,8 @@ void gSPTexture( f32 sc, f32 tc, s32 level, s32 tile, s32 on )
     }
 
     gSP.changed |= CHANGED_TEXTURESCALE;
+
+    //OGL_UpdateStates();
 }
 
 void gSPEndDisplayList()

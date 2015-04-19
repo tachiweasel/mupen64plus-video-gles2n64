@@ -239,11 +239,7 @@ inline bool gSPCommandRequiresFlush(u32 cmd) {
             cmd == F3D_DL ||
             cmd == F3D_POPMTX ||
             cmd == F3D_ENDDL ||
-            cmd == G_RDPPIPESYNC ||
-            cmd == G_SETTILESIZE ||         // tile size, atlasing should take care of it
-            cmd == G_SETTIMG ||             // texture image, ditto
-            cmd == F3D_TEXTURE ||           // texture metadata, ditto
-            cmd == G_SETTILE)               // texture upload stuff, ditto
+            cmd == G_RDPPIPESYNC)
         return false;
 
     // Ideal:

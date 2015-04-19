@@ -432,7 +432,30 @@ void TextureCache_Init()
 
     glGenTextures(1, &cache.glAtlasName);
     glBindTexture(GL_TEXTURE_2D, cache.glAtlasName);
-    void *atlasBitmap = calloc(1, 1024 * 1024 * 4);
+
+    u32 colors[7] = {
+        0x000000ff,
+        0x0000ff00,
+        0x00ff0000,
+        0x0000ffff,
+        0x00ffff00,
+        0x00ff00ff,
+        0x00ffffff,
+    };
+    int color = 0;
+
+    u32 *atlasBitmap = (u32 *)calloc(1, 1024 * 1024 * 4);
+    for (u32 yBlock = 0; yBlock < 32; yBlock++) {
+        for (u32 xBlock = 0; xBlock < 32; xBlock++) {
+            for (u32 y = 0; y < 32; y++) {
+                for (u32 x = 0; x < 32; x++) {
+                    atlasBitmap[yBlock * (1024 * 32) + xBlock * 32 + y * 1024 + x] = colors[color];
+                }
+            }
+            //color = (color + 1) % 7;
+        }
+    }
+
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1024, 1024, 0, GL_RGBA, GL_UNSIGNED_BYTE, atlasBitmap);
     free(atlasBitmap);
     for (u32 i = 0; i < ATLAS_USAGE_BITMASK_SIZE(cache); i++)
@@ -957,6 +980,7 @@ void TextureCache_Load( CachedTexture *texInfo )
 #if 0
         glTexImage2D( GL_TEXTURE_2D, 0, glFormat, glWidth, glHeight, 0, glFormat, glType, dest);
 #endif
+
         for (int i = 0; i < 2; i++) {
             glTexSubImage2D(GL_TEXTURE_2D,
                             0,
@@ -1477,18 +1501,22 @@ void TextureCache_ConvertTextureCoord( SPVertex *destVertex, f32 s, f32 t ) {
 "           uTexOffset[1])) * uCacheScale[1];               \n"\
 */
 
+    // Very important!
+    TextureCache_Update(0);
+    TextureCache_Update(1);
+
     CachedTexture *texture = cache.current[0];
-#if 0
     f32 computedS = ((s * gSP.texture.scales * texture->shiftScaleS) +
             (texture->offsetS - gSP.textureTile[0]->fuls)) * texture->scaleS;
     f32 computedT = ((t * gSP.texture.scalet * texture->shiftScaleT) +
             (texture->offsetT - gSP.textureTile[0]->fult)) * texture->scaleT;
-#endif
 
-    destVertex->s = ((f32)(texture->atlasXPos * ATLAS_BLOCK_SIZE) +
-            fabs(fmodf(s, 1.0f)) * texture->realWidth) / 1024.0;
-    destVertex->t = ((f32)(texture->atlasYPos * ATLAS_BLOCK_SIZE) +
-            fabs(fmodf(t, 1.0f)) * texture->realHeight) / 1024.0;
+    int atlasXPos = texture->atlasXPos;
+    int atlasYPos = texture->atlasYPos;
+    destVertex->s = ((f32)(atlasXPos * ATLAS_BLOCK_SIZE) +
+            fabs(fmodf(computedS, 1.0f)) * texture->realWidth) / 1024.0;
+    destVertex->t = ((f32)(atlasYPos * ATLAS_BLOCK_SIZE) +
+            fabs(fmodf(computedT, 1.0f)) * texture->realHeight) / 1024.0;
 
 #if 0
     destVertex->s = s;
@@ -1506,7 +1534,6 @@ void TextureCache_ConvertTextureCoord( SPVertex *destVertex, f32 s, f32 t ) {
         destVertex->t = (f32)(texture->atlasYPos * ATLAS_BLOCK_SIZE + texture->realHeight) /
             1024.0;
     }
-#endif
     printf("converted %f,%f to %f,%f atlasXPos=%d atlasYPos=%d realwidth=%d realheight=%d\n",
            s,
            t,
@@ -1516,5 +1543,6 @@ void TextureCache_ConvertTextureCoord( SPVertex *destVertex, f32 s, f32 t ) {
            texture->atlasYPos,
            texture->realWidth,
            texture->realHeight);
+#endif
 }
 
