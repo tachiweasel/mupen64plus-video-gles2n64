@@ -771,10 +771,17 @@ ShaderProgram *ShaderCombiner_Compile(DecodedMux *dmux, int flags)
 
     buffer += sprintf(buffer, "%s", _frag_header);
     if (prog->usesT0) {
-        buffer += sprintf(buffer, "lowp vec2 lComputedTexCoord0 = \n\
-                                       vTexAtlasBounds0.xy + \n\
-                                       vec2(abs(fract(vTexCoord0.s)), \n\
-                                            abs(fract(vTexCoord0.t))) * vTexAtlasBounds0.zw;\n");
+        buffer += sprintf(buffer, "lowp vec2 lComputedTexCoord0;\n");
+        buffer += sprintf(buffer, "if (vTexAtlasBounds0.z < 0.0)\n");
+        buffer += sprintf(buffer, "    lComputedTexCoord0.s = clamp(vTexCoord0.s, 0.0, 1.0);\n");
+        buffer += sprintf(buffer, "else\n");
+        buffer += sprintf(buffer, "    lComputedTexCoord0.s = abs(fract(vTexCoord0.s));\n");
+        buffer += sprintf(buffer, "if (vTexAtlasBounds0.w < 0.0)\n");
+        buffer += sprintf(buffer, "    lComputedTexCoord0.t = clamp(vTexCoord0.t, 0.0, 1.0);\n");
+        buffer += sprintf(buffer, "else\n");
+        buffer += sprintf(buffer, "    lComputedTexCoord0.t = abs(fract(vTexCoord0.t));\n");
+        buffer += sprintf(buffer, "lComputedTexCoord0 = vTexAtlasBounds0.xy + \n\
+                                        lComputedTexCoord0 * vec2(abs(vTexAtlasBounds0.z), abs(vTexAtlasBounds0.w));\n");
 #if 0
         buffer += sprintf(buffer, "lowp vec2 lComputedTexCoord0 = vTexCoord0;\n");
 #endif

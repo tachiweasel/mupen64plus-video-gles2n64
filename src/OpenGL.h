@@ -61,6 +61,7 @@ struct BufferedVertex {
     SPVertex vertex;
     f32 atlasStartS, atlasStartT;
     f32 atlasSizeS, atlasSizeT;
+    f32 atlasParamS, atlasParamT;
 };
 
 struct GLVertex

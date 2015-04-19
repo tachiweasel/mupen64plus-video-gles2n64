@@ -1517,6 +1517,10 @@ void TextureCache_ConvertTextureCoord( BufferedVertex *destVertex, f32 s, f32 t 
     destVertex->atlasStartT = (f32)(texture->atlasYPos * ATLAS_BLOCK_SIZE) / 1024.0;
     destVertex->atlasSizeS = (f32)(texture->realWidth) / 1024.0;
     destVertex->atlasSizeT = (f32)(texture->realHeight) / 1024.0;
+    if (texture->clampS)
+        destVertex->atlasSizeS = -destVertex->atlasSizeS;
+    if (texture->clampT)
+        destVertex->atlasSizeT = -destVertex->atlasSizeT;
 
 #if 0
     if (texture->clampS)
