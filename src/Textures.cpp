@@ -1485,10 +1485,10 @@ void TextureCache_ActivateNoise(u32 t)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
 }
 
-void TextureCache_ConvertTextureCoord( SPVertex *destVertex, f32 s, f32 t ) {
+void TextureCache_ConvertTextureCoord( BufferedVertex *destVertex, f32 s, f32 t ) {
     if (cache.current[0] == NULL) {
-        destVertex->s = s;
-        destVertex->t = t;
+        destVertex->vertex.s = s;
+        destVertex->vertex.t = t;
         return;
     }
 
@@ -1511,12 +1511,30 @@ void TextureCache_ConvertTextureCoord( SPVertex *destVertex, f32 s, f32 t ) {
     f32 computedT = ((t * gSP.texture.scalet * texture->shiftScaleT) +
             (texture->offsetT - gSP.textureTile[0]->fult)) * texture->scaleT;
 
+    destVertex->vertex.s = computedS;
+    destVertex->vertex.t = computedT;
+    destVertex->atlasStartS = (f32)(texture->atlasXPos * ATLAS_BLOCK_SIZE) / 1024.0;
+    destVertex->atlasStartT = (f32)(texture->atlasYPos * ATLAS_BLOCK_SIZE) / 1024.0;
+    destVertex->atlasSizeS = (f32)(texture->realWidth) / 1024.0;
+    destVertex->atlasSizeT = (f32)(texture->realHeight) / 1024.0;
+
+#if 0
+    if (texture->clampS)
+        computedS = computedS < 0.0 ? 0.0 : computedS > 1.0 ? 1.0 : computedS;
+    else
+        computedS = fabs(fmod(computedS, 1.0));
+    if (texture->clampT)
+        computedT = computedT < 0.0 ? 0.0 : computedT > 1.0 ? 1.0 : computedT;
+    else
+        computedT = fabs(fmod(computedT, 1.0));
+
     int atlasXPos = texture->atlasXPos;
     int atlasYPos = texture->atlasYPos;
-    destVertex->s = ((f32)(atlasXPos * ATLAS_BLOCK_SIZE) +
-            fabs(fmodf(computedS, 1.0f)) * texture->realWidth) / 1024.0;
-    destVertex->t = ((f32)(atlasYPos * ATLAS_BLOCK_SIZE) +
-            fabs(fmodf(computedT, 1.0f)) * texture->realHeight) / 1024.0;
+    destVertex->vertex.s = ((f32)(atlasXPos * ATLAS_BLOCK_SIZE) +
+            (computedS * texture->realWidth)) / 1024.0;
+    destVertex->vertex.t = ((f32)(atlasYPos * ATLAS_BLOCK_SIZE) +
+            (computedT * texture->realHeight)) / 1024.0;
+#endif
 
 #if 0
     destVertex->s = s;

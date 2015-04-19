@@ -462,8 +462,8 @@ static void gSPLightVertexNEON(u32 v)
     volatile int tmp = 0;
     volatile int i = gSP.numLights;
     volatile void *ptr0 = &gSP.lights[0].r;
-    volatile void *ptr1 = &OGL.triangles.vertices[v].nx;
-    volatile void *ptr2 = result;;
+    volatile void *ptr1 = &OGL.triangles.vertices[v].vertex.nx;
+    volatile void *ptr2 = result;
     volatile void *ptr3 = gSP.matrix.modelView[gSP.matrix.modelViewi];
 
 	asm volatile (
@@ -532,9 +532,9 @@ static void gSPLightVertexNEON(u32 v)
     :: "d0", "d1", "d2", "d3", "d4", "d5", "d6", "d7",
       "d16", "memory", "cc"
     );
-    OGL.triangles.vertices[v].r = result[0];
-    OGL.triangles.vertices[v].g = result[1];
-    OGL.triangles.vertices[v].b = result[2];
+    OGL.triangles.vertices[v].vertex.r = result[0];
+    OGL.triangles.vertices[v].vertex.g = result[1];
+    OGL.triangles.vertices[v].vertex.b = result[2];
 }
 
 static void gSPBillboardVertexNEON(u32 v, u32 i)
@@ -544,7 +544,7 @@ static void gSPBillboardVertexNEON(u32 v, u32 i)
     "vld1.32 		{d4, d5}, [%1]			\n\t"	//q2={x1,y1, z1, w1}
     "vadd.f32 		q1, q1, q2 			    \n\t"	//q1=q1+q1
     "vst1.32 		{d2, d3}, [%0] 		    \n\t"	//
-    :: "r"(&OGL.triangles.vertices[v].x), "r"(&OGL.triangles.vertices[i].x)
+    :: "r"(&OGL.triangles.vertices[v].vertex.x), "r"(&OGL.triangles.vertices[i].vertex.x)
     : "d2", "d3", "d4", "d5", "memory"
     );
 }

@@ -623,7 +623,7 @@ bool OGL_Start()
 
     TextureCache_Init();
 
-    memset(OGL.triangles.vertices, 0, VERTBUFF_SIZE * sizeof(SPVertex));
+    memset(OGL.triangles.vertices, 0, VERTBUFF_SIZE * sizeof(BufferedVertex));
     memset(OGL.triangles.elements, 0, ELEMBUFF_SIZE * sizeof(GLubyte));
     OGL.triangles.num = 0;
 
@@ -1164,10 +1164,14 @@ void OGL_SetTexCoordArrays()
 	{
         glEnableVertexAttribArray(SC_TEXCOORD0);
 		OPENGL_CHECK_ERRORS;
+        glEnableVertexAttribArray(SC_TEXATLASBOUNDS0);
+        OPENGL_CHECK_ERRORS;
     }
 	else
 	{
         glDisableVertexAttribArray(SC_TEXCOORD0);
+		OPENGL_CHECK_ERRORS;
+        glDisableVertexAttribArray(SC_TEXATLASBOUNDS0);
 		OPENGL_CHECK_ERRORS;
 	}
 
@@ -1215,13 +1219,36 @@ void OGL_DrawTriangles()
         StateChanges++;
 #endif
         printf("*** state change!\n");
-        glVertexAttribPointer(SC_POSITION, 4, GL_FLOAT, GL_FALSE, sizeof(SPVertex), &OGL.triangles.vertices[0].x);
+        glVertexAttribPointer(SC_POSITION,
+                              4,
+                              GL_FLOAT,
+                              GL_FALSE,
+                              sizeof(BufferedVertex),
+                              &OGL.triangles.vertices[0].vertex.x);
 		OPENGL_CHECK_ERRORS;
 
-        glVertexAttribPointer(SC_COLOR, 4, GL_FLOAT, GL_FALSE, sizeof(SPVertex), &OGL.triangles.vertices[0].r);
+        glVertexAttribPointer(SC_COLOR,
+                              4,
+                              GL_FLOAT,
+                              GL_FALSE,
+                              sizeof(BufferedVertex),
+                              &OGL.triangles.vertices[0].vertex.r);
 		OPENGL_CHECK_ERRORS;
 
-        glVertexAttribPointer(SC_TEXCOORD0, 2, GL_FLOAT, GL_FALSE, sizeof(SPVertex), &OGL.triangles.vertices[0].s);
+        glVertexAttribPointer(SC_TEXCOORD0,
+                              2,
+                              GL_FLOAT,
+                              GL_FALSE,
+                              sizeof(BufferedVertex),
+                              &OGL.triangles.vertices[0].vertex.s);
+		OPENGL_CHECK_ERRORS;
+
+        glVertexAttribPointer(SC_TEXATLASBOUNDS0,
+                              4,
+                              GL_FLOAT,
+                              GL_FALSE,
+                              sizeof(BufferedVertex),
+                              &OGL.triangles.vertices[0].atlasStartS);
 		OPENGL_CHECK_ERRORS;
 
         OGL_UpdateCullFace();
@@ -1275,9 +1302,21 @@ void OGL_DrawLine(int v0, int v1, float width )
 		OPENGL_CHECK_ERRORS;
         glDisableVertexAttribArray(SC_TEXCOORD1);
 		OPENGL_CHECK_ERRORS;
-        glVertexAttribPointer(SC_POSITION, 4, GL_FLOAT, GL_FALSE, sizeof(SPVertex), &OGL.triangles.vertices[0].x);
+        glDisableVertexAttribArray(SC_TEXATLASBOUNDS0);
 		OPENGL_CHECK_ERRORS;
-        glVertexAttribPointer(SC_COLOR, 4, GL_FLOAT, GL_FALSE, sizeof(SPVertex), &OGL.triangles.vertices[0].r);
+        glVertexAttribPointer(SC_POSITION,
+                              4,
+                              GL_FLOAT,
+                              GL_FALSE,
+                              sizeof(BufferedVertex),
+                              &OGL.triangles.vertices[0].vertex.x);
+		OPENGL_CHECK_ERRORS;
+        glVertexAttribPointer(SC_COLOR,
+                              4,
+                              GL_FLOAT,
+                              GL_FALSE,
+                              sizeof(BufferedVertex),
+                              &OGL.triangles.vertices[0].vertex.r);
 		OPENGL_CHECK_ERRORS;
 
         SC_ForceUniform1f(uRenderState, RS_LINE);
@@ -1313,6 +1352,9 @@ void OGL_DrawRect( int ulx, int uly, int lrx, int lry, float *color)
 		OPENGL_CHECK_ERRORS;
 
         glDisableVertexAttribArray(SC_TEXCOORD1);
+		OPENGL_CHECK_ERRORS;
+
+        glDisableVertexAttribArray(SC_TEXATLASBOUNDS0);
 		OPENGL_CHECK_ERRORS;
 
         SC_ForceUniform1f(uRenderState, RS_RECT);
@@ -1411,6 +1453,9 @@ void OGL_DrawTexturedRect( float ulx, float uly, float lrx, float lry, float uls
 		OPENGL_CHECK_ERRORS;
 
         glVertexAttribPointer(SC_TEXCOORD1, 2, GL_FLOAT, GL_FALSE, sizeof(GLVertex), &OGL.rect[0].s1);
+		OPENGL_CHECK_ERRORS;
+
+        glDisableVertexAttribArray(SC_TEXATLASBOUNDS0);
 		OPENGL_CHECK_ERRORS;
 
         OGL.renderState = RS_TEXTUREDRECT;

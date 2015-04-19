@@ -46,40 +46,46 @@ void F3DCBFD_Vtx(u32 w0, u32 w1)
 			v = v0 + i;
 		#endif
 
-		OGL.triangles.vertices[v].x = vertex->x;
-		OGL.triangles.vertices[v].y = vertex->y;
-		OGL.triangles.vertices[v].z = vertex->z;
-		OGL.triangles.vertices[v].w = 1.0f;
+		OGL.triangles.vertices[v].vertex.x = vertex->x;
+		OGL.triangles.vertices[v].vertex.y = vertex->y;
+		OGL.triangles.vertices[v].vertex.z = vertex->z;
+		OGL.triangles.vertices[v].vertex.w = 1.0f;
 
-		OGL.triangles.vertices[v].s = _FIXED2FLOAT(vertex->s, 5);
-		OGL.triangles.vertices[v].t = _FIXED2FLOAT(vertex->t, 5);
+		OGL.triangles.vertices[v].vertex.s = _FIXED2FLOAT(vertex->s, 5);
+		OGL.triangles.vertices[v].vertex.t = _FIXED2FLOAT(vertex->t, 5);
 
 		if (config.enableLighting && gSP.geometryMode & G_LIGHTING)
 		{
-			OGL.triangles.vertices[v].nx = ((s8*)RDRAM)[(normal_address + (i<<1) + (v0<<1) + 0)^3];
-			OGL.triangles.vertices[v].ny = ((s8*)RDRAM)[(normal_address + (i<<1) + (v0<<1) + 1)^3];
-			OGL.triangles.vertices[v].nz = (s8)(vertex->flag&0xff);
+			OGL.triangles.vertices[v].vertex.nx =
+                ((s8*)RDRAM)[(normal_address + (i<<1) + (v0<<1) + 0)^3];
+			OGL.triangles.vertices[v].vertex.ny =
+                ((s8*)RDRAM)[(normal_address + (i<<1) + (v0<<1) + 1)^3];
+			OGL.triangles.vertices[v].vertex.nz =
+                (s8)(vertex->flag&0xff);
 		}
 
 		gSPProcessVertex(v);
 
 		u32 nonblack = 0;
-		nonblack += OGL.triangles.vertices[v].r;
-		nonblack += OGL.triangles.vertices[v].g;
-		nonblack += OGL.triangles.vertices[v].b;
+		nonblack += OGL.triangles.vertices[v].vertex.r;
+		nonblack += OGL.triangles.vertices[v].vertex.g;
+		nonblack += OGL.triangles.vertices[v].vertex.b;
 		if (config.enableLighting && (gSP.geometryMode & G_LIGHTING) && (nonblack != 0))
 		{
-			OGL.triangles.vertices[v].r = OGL.triangles.vertices[v].r * vertex->color.r * 0.0039215689f;
-			OGL.triangles.vertices[v].g = OGL.triangles.vertices[v].g * vertex->color.g * 0.0039215689f;
-			OGL.triangles.vertices[v].b = OGL.triangles.vertices[v].b * vertex->color.b * 0.0039215689f;
-			OGL.triangles.vertices[v].a = vertex->color.a * 0.0039215689f;
+			OGL.triangles.vertices[v].vertex.r = OGL.triangles.vertices[v].vertex.r *
+                vertex->color.r * 0.0039215689f;
+			OGL.triangles.vertices[v].vertex.g = OGL.triangles.vertices[v].vertex.g *
+                vertex->color.g * 0.0039215689f;
+			OGL.triangles.vertices[v].vertex.b = OGL.triangles.vertices[v].vertex.b *
+                vertex->color.b * 0.0039215689f;
+			OGL.triangles.vertices[v].vertex.a = vertex->color.a * 0.0039215689f;
 		}
 		else
 		{
-			OGL.triangles.vertices[v].r = vertex->color.r * 0.0039215689f;
-			OGL.triangles.vertices[v].g = vertex->color.g * 0.0039215689f;
-			OGL.triangles.vertices[v].b = vertex->color.b * 0.0039215689f;
-			OGL.triangles.vertices[v].a = vertex->color.a * 0.0039215689f;
+			OGL.triangles.vertices[v].vertex.r = vertex->color.r * 0.0039215689f;
+			OGL.triangles.vertices[v].vertex.g = vertex->color.g * 0.0039215689f;
+			OGL.triangles.vertices[v].vertex.b = vertex->color.b * 0.0039215689f;
+			OGL.triangles.vertices[v].vertex.a = vertex->color.a * 0.0039215689f;
 		}
 		vertex++;
 	}

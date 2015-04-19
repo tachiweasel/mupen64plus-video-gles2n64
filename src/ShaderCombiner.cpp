@@ -99,6 +99,7 @@ const char *_frag_header = "                                \n"\
 "varying lowp vec4 vShadeColor;                             \n"\
 "varying mediump vec2 vTexCoord0;                           \n"\
 "varying mediump vec2 vTexCoord1;                           \n"\
+"varying mediump vec4 vTexAtlasBounds0;                     \n"\
 "                                                           \n"\
 "void main()                                                \n"\
 "{                                                          \n"\
@@ -110,6 +111,7 @@ const char *_vert = "                                       \n"\
 "attribute lowp vec4 	aColor;                             \n"\
 "attribute highp vec2   aTexCoord0;                         \n"\
 "attribute highp vec2   aTexCoord1;                         \n"\
+"attribute highp vec4   aTexAtlasBounds0;                   \n"\
 "                                                           \n"\
 "uniform bool		    uEnableFog;                         \n"\
 "uniform float			uFogMultiplier, uFogOffset;         \n"\
@@ -125,6 +127,7 @@ const char *_vert = "                                       \n"\
 "varying lowp vec4 		vShadeColor;                        \n"\
 "varying mediump vec2 	vTexCoord0;                         \n"\
 "varying mediump vec2 	vTexCoord1;                         \n"\
+"varying mediump vec4   vTexAtlasBounds0;                   \n"\
 "                                                           \n"\
 "void main()                                                \n"\
 "{                                                          \n"\
@@ -135,11 +138,13 @@ const char *_vert = "                                       \n"\
 "{                                                          \n"\
 "vTexCoord0 = aTexCoord0;                                   \n"\
 "vTexCoord1 = aTexCoord0;                                   \n"\
+"vTexAtlasBounds0 = aTexAtlasBounds0;                       \n"\
 "}                                                          \n"\
 "else                                                       \n"\
 "{                                                          \n"\
 "vTexCoord0 = aTexCoord0;                                   \n"\
 "vTexCoord1 = aTexCoord1;                                   \n"\
+"vTexAtlasBounds0 = aTexAtlasBounds0;                       \n"\
 "}                                                          \n"\
 "                                                           \n";
 
@@ -451,10 +456,11 @@ void _gllinker_error(GLint program)
 
 void _locate_attributes(ShaderProgram *p)
 {
-    glBindAttribLocation(p->program, SC_POSITION,   "aPosition");
-    glBindAttribLocation(p->program, SC_COLOR,      "aColor");
-    glBindAttribLocation(p->program, SC_TEXCOORD0,  "aTexCoord0");
-    glBindAttribLocation(p->program, SC_TEXCOORD1,  "aTexCoord1");
+    glBindAttribLocation(p->program, SC_POSITION,        "aPosition");
+    glBindAttribLocation(p->program, SC_COLOR,           "aColor");
+    glBindAttribLocation(p->program, SC_TEXCOORD0,       "aTexCoord0");
+    glBindAttribLocation(p->program, SC_TEXCOORD1,       "aTexCoord1");
+    glBindAttribLocation(p->program, SC_TEXATLASBOUNDS0, "aTexAtlasBounds0");
 };
 
 #define LocateUniform(A) \
@@ -764,8 +770,19 @@ ShaderProgram *ShaderCombiner_Compile(DecodedMux *dmux, int flags)
     }
 
     buffer += sprintf(buffer, "%s", _frag_header);
-    if (prog->usesT0)
+    if (prog->usesT0) {
+        buffer += sprintf(buffer, "lowp vec2 lComputedTexCoord0 = \n\
+                                       vTexAtlasBounds0.xy + \n\
+                                       vec2(abs(fract(vTexCoord0.s)), \n\
+                                            abs(fract(vTexCoord0.t))) * vTexAtlasBounds0.zw;\n");
+#if 0
+        buffer += sprintf(buffer, "lowp vec2 lComputedTexCoord0 = vTexCoord0;\n");
+#endif
+        buffer += sprintf(buffer, "lowp vec4 lTex0 = texture2D(uTex0, lComputedTexCoord0); \n");
+#if 0
         buffer += sprintf(buffer, "lowp vec4 lTex0 = texture2D(uTex0, vTexCoord0); \n");
+#endif
+    }
     if (prog->usesT1)
         buffer += sprintf(buffer, "lowp vec4 lTex1 = texture2D(uTex1, vTexCoord1); \n");
     if (prog->usesNoise)
@@ -812,14 +829,14 @@ ShaderProgram *ShaderCombiner_Compile(DecodedMux *dmux, int flags)
     buffer += sprintf(buffer, "} \n\n");
     *buffer = 0;
 
-#ifdef PRINT_SHADER
+//#ifdef PRINT_SHADER
     LOG(LOG_VERBOSE, "=============================================================\n");
     LOG(LOG_VERBOSE, "Combine=0x%llx flags=0x%x dmux flags=0x%x\n", prog->combine.mux, flags, dmux->flags);
     LOG(LOG_VERBOSE, "Num=%i \t usesT0=%i usesT1=%i usesCol=%i usesNoise=%i\n", scProgramCount, prog->usesT0, prog->usesT1, prog->usesCol, prog->usesNoise);
     LOG(LOG_VERBOSE, "=============================================================\n");
-    LOG(LOG_VERBOSE, "%s", frag);
+    printf("%s", frag);
     LOG(LOG_VERBOSE, "=============================================================\n");
-#endif
+//#endif
 
     prog->program = glCreateProgram();
 
@@ -842,7 +859,7 @@ ShaderProgram *ShaderCombiner_Compile(DecodedMux *dmux, int flags)
     }
 	else
 	{
-		//printf("%d Shader COMPILED\n", __LINE__);
+		printf("%d Shader COMPILED\n", __LINE__);
 	}
 
     //link

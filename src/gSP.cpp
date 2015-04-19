@@ -71,7 +71,7 @@ u32 __indexmap_findunused(u32 num)
 
 void __indexmap_undomap()
 {
-    SPVertex tmp[INDEXMAP_SIZE];
+    BufferedVertex tmp[INDEXMAP_SIZE];
     memset(OGL.triangles.indexmapinv, 0xFF, VERTBUFF_SIZE * sizeof(u32));
 
     for(int i=0;i<INDEXMAP_SIZE;i++)
@@ -82,7 +82,7 @@ void __indexmap_undomap()
         OGL.triangles.indexmapinv[i] = i;
     }
 
-    memcpy(OGL.triangles.vertices, tmp, INDEXMAP_SIZE * sizeof(SPVertex));
+    memcpy(OGL.triangles.vertices, tmp, INDEXMAP_SIZE * sizeof(BufferedVertex));
     OGL.triangles.indexmap_nomap = 1;
 }
 
@@ -428,7 +428,7 @@ void gSPProcessVertex4(u32 v)
 
 void gSPClipVertex(u32 v)
 {
-    SPVertex *vtx = &OGL.triangles.vertices[v];
+    SPVertex *vtx = &OGL.triangles.vertices[v].vertex;
     vtx->clip = 0;
     if (vtx->x > +vtx->w)   vtx->clip |= CLIP_POSX;
     if (vtx->x < -vtx->w)   vtx->clip |= CLIP_NEGX;
@@ -453,7 +453,8 @@ static void gSPTransformVertex_default(float vtx[4], float mtx[4][4])
 
 static void gSPLightVertex_default(u32 v)
 {
-    TransformVectorNormalize( &OGL.triangles.vertices[v].nx, gSP.matrix.modelView[gSP.matrix.modelViewi] );
+    TransformVectorNormalize( &OGL.triangles.vertices[v].vertex.nx,
+                              gSP.matrix.modelView[gSP.matrix.modelViewi] );
 
     f32 r, g, b;
     r = gSP.lights[gSP.numLights].r;
@@ -461,23 +462,23 @@ static void gSPLightVertex_default(u32 v)
     b = gSP.lights[gSP.numLights].b;
     for (int i = 0; i < gSP.numLights; i++)
     {
-        f32 intensity = DotProduct( &OGL.triangles.vertices[v].nx, &gSP.lights[i].x );
+        f32 intensity = DotProduct( &OGL.triangles.vertices[v].vertex.nx, &gSP.lights[i].x );
         if (intensity < 0.0f) intensity = 0.0f;
         r += gSP.lights[i].r * intensity;
         g += gSP.lights[i].g * intensity;
         b += gSP.lights[i].b * intensity;
     }
-    OGL.triangles.vertices[v].r = min(1.0, r);
-    OGL.triangles.vertices[v].g = min(1.0, g);
-    OGL.triangles.vertices[v].b = min(1.0, b);
+    OGL.triangles.vertices[v].vertex.r = min(1.0, r);
+    OGL.triangles.vertices[v].vertex.g = min(1.0, g);
+    OGL.triangles.vertices[v].vertex.b = min(1.0, b);
 }
 
 static void gSPBillboardVertex_default(u32 v, u32 i)
 {
-    OGL.triangles.vertices[v].x += OGL.triangles.vertices[i].x;
-    OGL.triangles.vertices[v].y += OGL.triangles.vertices[i].y;
-    OGL.triangles.vertices[v].z += OGL.triangles.vertices[i].z;
-    OGL.triangles.vertices[v].w += OGL.triangles.vertices[i].w;
+    OGL.triangles.vertices[v].vertex.x += OGL.triangles.vertices[i].vertex.x;
+    OGL.triangles.vertices[v].vertex.y += OGL.triangles.vertices[i].vertex.y;
+    OGL.triangles.vertices[v].vertex.z += OGL.triangles.vertices[i].vertex.z;
+    OGL.triangles.vertices[v].vertex.w += OGL.triangles.vertices[i].vertex.w;
 }
 
 void gSPCombineMatrices()
@@ -494,16 +495,16 @@ void gSPProcessVertex( u32 v )
     if (gSP.changed & CHANGED_MATRIX)
         gSPCombineMatrices();
 
-    gSPTransformVertex( &OGL.triangles.vertices[v].x, gSP.matrix.combined );
+    gSPTransformVertex( &OGL.triangles.vertices[v].vertex.x, gSP.matrix.combined );
 
     if (config.screen.flipVertical)
     {
-        OGL.triangles.vertices[v].y = -OGL.triangles.vertices[v].y;
+        OGL.triangles.vertices[v].vertex.y = -OGL.triangles.vertices[v].vertex.y;
     }
 
     if (gDP.otherMode.depthSource)
     {
-        OGL.triangles.vertices[v].z = gDP.primDepth.z * OGL.triangles.vertices[v].w;
+        OGL.triangles.vertices[v].vertex.z = gDP.primDepth.z * OGL.triangles.vertices[v].vertex.w;
     }
 
     if (gSP.matrix.billboard)
@@ -518,7 +519,7 @@ void gSPProcessVertex( u32 v )
 
     if (!(gSP.geometryMode & G_ZBUFFER))
     {
-        OGL.triangles.vertices[v].z = -OGL.triangles.vertices[v].w;
+        OGL.triangles.vertices[v].vertex.z = -OGL.triangles.vertices[v].vertex.w;
     }
 
     if (config.enableClipping)
@@ -532,14 +533,14 @@ void gSPProcessVertex( u32 v )
         }
         else
         {
-            OGL.triangles.vertices[v].r = 1.0f;
-            OGL.triangles.vertices[v].g = 1.0f;
-            OGL.triangles.vertices[v].b = 1.0f;
+            OGL.triangles.vertices[v].vertex.r = 1.0f;
+            OGL.triangles.vertices[v].vertex.g = 1.0f;
+            OGL.triangles.vertices[v].vertex.b = 1.0f;
         }
 
         if (gSP.geometryMode & G_TEXTURE_GEN)
         {
-            TransformVectorNormalize(&OGL.triangles.vertices[v].nx, gSP.matrix.projection);
+            TransformVectorNormalize(&OGL.triangles.vertices[v].vertex.nx, gSP.matrix.projection);
 
 #if 0
             if (gSP.geometryMode & G_TEXTURE_GEN_LINEAR)
@@ -812,25 +813,25 @@ void gSPVertex( u32 v, u32 n, u32 v0 )
             v = __indexmap_getnew(v, 1);
 #endif
 
-            OGL.triangles.vertices[v].x = vertex->x;
-            OGL.triangles.vertices[v].y = vertex->y;
-            OGL.triangles.vertices[v].z = vertex->z;
+            OGL.triangles.vertices[v].vertex.x = vertex->x;
+            OGL.triangles.vertices[v].vertex.y = vertex->y;
+            OGL.triangles.vertices[v].vertex.z = vertex->z;
             TextureCache_ConvertTextureCoord(&OGL.triangles.vertices[v],
                                              _FIXED2FLOAT( vertex->s, 5 ),
                                              _FIXED2FLOAT( vertex->t, 5 ));
             if (gSP.geometryMode & G_LIGHTING)
             {
-                OGL.triangles.vertices[v].nx = vertex->normal.x;
-                OGL.triangles.vertices[v].ny = vertex->normal.y;
-                OGL.triangles.vertices[v].nz = vertex->normal.z;
-                OGL.triangles.vertices[v].a = vertex->color.a * 0.0039215689f;
+                OGL.triangles.vertices[v].vertex.nx = vertex->normal.x;
+                OGL.triangles.vertices[v].vertex.ny = vertex->normal.y;
+                OGL.triangles.vertices[v].vertex.nz = vertex->normal.z;
+                OGL.triangles.vertices[v].vertex.a = vertex->color.a * 0.0039215689f;
             }
             else
             {
-                OGL.triangles.vertices[v].r = vertex->color.r * 0.0039215689f;
-                OGL.triangles.vertices[v].g = vertex->color.g * 0.0039215689f;
-                OGL.triangles.vertices[v].b = vertex->color.b * 0.0039215689f;
-                OGL.triangles.vertices[v].a = vertex->color.a * 0.0039215689f;
+                OGL.triangles.vertices[v].vertex.r = vertex->color.r * 0.0039215689f;
+                OGL.triangles.vertices[v].vertex.g = vertex->color.g * 0.0039215689f;
+                OGL.triangles.vertices[v].vertex.b = vertex->color.b * 0.0039215689f;
+                OGL.triangles.vertices[v].vertex.a = vertex->color.a * 0.0039215689f;
             }
             gSPProcessVertex(v);
             vertex++;
@@ -871,9 +872,9 @@ void gSPCIVertex( u32 v, u32 n, u32 v0 )
 #endif
             for(unsigned int j = 0; j < 4; j++)
             {
-                OGL.triangles.vertices[v+j].x = vertex->x;
-                OGL.triangles.vertices[v+j].y = vertex->y;
-                OGL.triangles.vertices[v+j].z = vertex->z;
+                OGL.triangles.vertices[v+j].vertex.x = vertex->x;
+                OGL.triangles.vertices[v+j].vertex.y = vertex->y;
+                OGL.triangles.vertices[v+j].vertex.z = vertex->z;
                 TextureCache_ConvertTextureCoord(&OGL.triangles.vertices[v+j],
                                                  _FIXED2FLOAT( vertex->s, 5 ),
                                                  _FIXED2FLOAT( vertex->t, 5 ));
@@ -881,17 +882,17 @@ void gSPCIVertex( u32 v, u32 n, u32 v0 )
 
                 if (gSP.geometryMode & G_LIGHTING)
                 {
-                    OGL.triangles.vertices[v+j].nx = (s8)color[3];
-                    OGL.triangles.vertices[v+j].ny = (s8)color[2];
-                    OGL.triangles.vertices[v+j].nz = (s8)color[1];
-                    OGL.triangles.vertices[v+j].a = color[0] * 0.0039215689f;
+                    OGL.triangles.vertices[v+j].vertex.nx = (s8)color[3];
+                    OGL.triangles.vertices[v+j].vertex.ny = (s8)color[2];
+                    OGL.triangles.vertices[v+j].vertex.nz = (s8)color[1];
+                    OGL.triangles.vertices[v+j].vertex.a = color[0] * 0.0039215689f;
                 }
                 else
                 {
-                    OGL.triangles.vertices[v+j].r = color[3] * 0.0039215689f;
-                    OGL.triangles.vertices[v+j].g = color[2] * 0.0039215689f;
-                    OGL.triangles.vertices[v+j].b = color[1] * 0.0039215689f;
-                    OGL.triangles.vertices[v+j].a = color[0] * 0.0039215689f;
+                    OGL.triangles.vertices[v+j].vertex.r = color[3] * 0.0039215689f;
+                    OGL.triangles.vertices[v+j].vertex.g = color[2] * 0.0039215689f;
+                    OGL.triangles.vertices[v+j].vertex.b = color[1] * 0.0039215689f;
+                    OGL.triangles.vertices[v+j].vertex.a = color[0] * 0.0039215689f;
                 }
                 vertex++;
             }
@@ -904,9 +905,9 @@ void gSPCIVertex( u32 v, u32 n, u32 v0 )
 #ifdef __TRIBUFFER_OPT
             v = __indexmap_getnew(v, 1);
 #endif
-            OGL.triangles.vertices[v].x = vertex->x;
-            OGL.triangles.vertices[v].y = vertex->y;
-            OGL.triangles.vertices[v].z = vertex->z;
+            OGL.triangles.vertices[v].vertex.x = vertex->x;
+            OGL.triangles.vertices[v].vertex.y = vertex->y;
+            OGL.triangles.vertices[v].vertex.z = vertex->z;
             TextureCache_ConvertTextureCoord(&OGL.triangles.vertices[v],
                                              _FIXED2FLOAT( vertex->s, 5 ),
                                              _FIXED2FLOAT( vertex->t, 5 ));
@@ -914,17 +915,17 @@ void gSPCIVertex( u32 v, u32 n, u32 v0 )
 
             if (gSP.geometryMode & G_LIGHTING)
             {
-                OGL.triangles.vertices[v].nx = (s8)color[3];
-                OGL.triangles.vertices[v].ny = (s8)color[2];
-                OGL.triangles.vertices[v].nz = (s8)color[1];
-                OGL.triangles.vertices[v].a = color[0] * 0.0039215689f;
+                OGL.triangles.vertices[v].vertex.nx = (s8)color[3];
+                OGL.triangles.vertices[v].vertex.ny = (s8)color[2];
+                OGL.triangles.vertices[v].vertex.nz = (s8)color[1];
+                OGL.triangles.vertices[v].vertex.a = color[0] * 0.0039215689f;
             }
             else
             {
-                OGL.triangles.vertices[v].r = color[3] * 0.0039215689f;
-                OGL.triangles.vertices[v].g = color[2] * 0.0039215689f;
-                OGL.triangles.vertices[v].b = color[1] * 0.0039215689f;
-                OGL.triangles.vertices[v].a = color[0] * 0.0039215689f;
+                OGL.triangles.vertices[v].vertex.r = color[3] * 0.0039215689f;
+                OGL.triangles.vertices[v].vertex.g = color[2] * 0.0039215689f;
+                OGL.triangles.vertices[v].vertex.b = color[1] * 0.0039215689f;
+                OGL.triangles.vertices[v].vertex.a = color[0] * 0.0039215689f;
             }
 
             gSPProcessVertex(v);
@@ -1000,23 +1001,28 @@ void gSPDMAVertex( u32 v, u32 n, u32 v0 )
 #else
             v = i;
 #endif
-            OGL.triangles.vertices[v].x = *(s16*)&RDRAM[address ^ 2];
-            OGL.triangles.vertices[v].y = *(s16*)&RDRAM[(address + 2) ^ 2];
-            OGL.triangles.vertices[v].z = *(s16*)&RDRAM[(address + 4) ^ 2];
+            OGL.triangles.vertices[v].vertex.x = *(s16*)&RDRAM[address ^ 2];
+            OGL.triangles.vertices[v].vertex.y = *(s16*)&RDRAM[(address + 2) ^ 2];
+            OGL.triangles.vertices[v].vertex.z = *(s16*)&RDRAM[(address + 4) ^ 2];
 
             if (gSP.geometryMode & G_LIGHTING)
             {
-                OGL.triangles.vertices[v].nx = *(s8*)&RDRAM[(address + 6) ^ 3];
-                OGL.triangles.vertices[v].ny = *(s8*)&RDRAM[(address + 7) ^ 3];
-                OGL.triangles.vertices[v].nz = *(s8*)&RDRAM[(address + 8) ^ 3];
-                OGL.triangles.vertices[v].a = *(u8*)&RDRAM[(address + 9) ^ 3] * 0.0039215689f;
+                OGL.triangles.vertices[v].vertex.nx = *(s8*)&RDRAM[(address + 6) ^ 3];
+                OGL.triangles.vertices[v].vertex.ny = *(s8*)&RDRAM[(address + 7) ^ 3];
+                OGL.triangles.vertices[v].vertex.nz = *(s8*)&RDRAM[(address + 8) ^ 3];
+                OGL.triangles.vertices[v].vertex.a = *(u8*)&RDRAM[(address + 9) ^ 3] *
+                    0.0039215689f;
             }
             else
             {
-                OGL.triangles.vertices[v].r = *(u8*)&RDRAM[(address + 6) ^ 3] * 0.0039215689f;
-                OGL.triangles.vertices[v].g = *(u8*)&RDRAM[(address + 7) ^ 3] * 0.0039215689f;
-                OGL.triangles.vertices[v].b = *(u8*)&RDRAM[(address + 8) ^ 3] * 0.0039215689f;
-                OGL.triangles.vertices[v].a = *(u8*)&RDRAM[(address + 9) ^ 3] * 0.0039215689f;
+                OGL.triangles.vertices[v].vertex.r = *(u8*)&RDRAM[(address + 6) ^ 3] *
+                    0.0039215689f;
+                OGL.triangles.vertices[v].vertex.g = *(u8*)&RDRAM[(address + 7) ^ 3] *
+                    0.0039215689f;
+                OGL.triangles.vertices[v].vertex.b = *(u8*)&RDRAM[(address + 8) ^ 3] *
+                    0.0039215689f;
+                OGL.triangles.vertices[v].vertex.a = *(u8*)&RDRAM[(address + 9) ^ 3] *
+                    0.0039215689f;
             }
 
             gSPProcessVertex(v);
@@ -1106,7 +1112,7 @@ void gSPBranchLessZ( u32 branchdl, u32 vtx, f32 zval )
         return;
     }
 
-    if (OGL.triangles.vertices[vtx].z <= zval)
+    if (OGL.triangles.vertices[vtx].vertex.z <= zval)
         RSP.PC[RSP.PCi] = address;
 }
 
@@ -1229,7 +1235,7 @@ bool gSPCullVertices( u32 v0, u32 vn )
     v = OGL.triangles.indexmap[v0];
 #endif
 
-    u32 clip = OGL.triangles.vertices[v].clip;
+    u32 clip = OGL.triangles.vertices[v].vertex.clip;
     if (clip == 0)
         return FALSE;
 
@@ -1239,7 +1245,7 @@ bool gSPCullVertices( u32 v0, u32 vn )
 #ifdef __TRIBUFFER_OPT
         v = OGL.triangles.indexmap[i];
 #endif
-        if (OGL.triangles.vertices[v].clip != clip) return FALSE;
+        if (OGL.triangles.vertices[v].vertex.clip != clip) return FALSE;
     }
     return TRUE;
 }
@@ -1351,15 +1357,15 @@ void gSPModifyVertex( u32 vtx, u32 where, u32 val )
     switch (where)
     {
         case G_MWO_POINT_RGBA:
-            OGL.triangles.vertices[v].r = _SHIFTR( val, 24, 8 ) * 0.0039215689f;
-            OGL.triangles.vertices[v].g = _SHIFTR( val, 16, 8 ) * 0.0039215689f;
-            OGL.triangles.vertices[v].b = _SHIFTR( val, 8, 8 ) * 0.0039215689f;
-            OGL.triangles.vertices[v].a = _SHIFTR( val, 0, 8 ) * 0.0039215689f;
+            OGL.triangles.vertices[v].vertex.r = _SHIFTR( val, 24, 8 ) * 0.0039215689f;
+            OGL.triangles.vertices[v].vertex.g = _SHIFTR( val, 16, 8 ) * 0.0039215689f;
+            OGL.triangles.vertices[v].vertex.b = _SHIFTR( val, 8, 8 ) * 0.0039215689f;
+            OGL.triangles.vertices[v].vertex.a = _SHIFTR( val, 0, 8 ) * 0.0039215689f;
             break;
         case G_MWO_POINT_ST:
 #if 0
-            OGL.triangles.vertices[v].s = _FIXED2FLOAT( (s16)_SHIFTR( val, 16, 16 ), 5 );
-            OGL.triangles.vertices[v].t = _FIXED2FLOAT( (s16)_SHIFTR( val, 0, 16 ), 5 );
+            OGL.triangles.vertices[v].vertex.s = _FIXED2FLOAT( (s16)_SHIFTR( val, 16, 16 ), 5 );
+            OGL.triangles.vertices[v].vertex.t = _FIXED2FLOAT( (s16)_SHIFTR( val, 0, 16 ), 5 );
 #endif
             break;
         case G_MWO_POINT_XYSCREEN:
@@ -1650,52 +1656,68 @@ void gSPObjSprite( u32 sp )
     v3 = OGL.triangles.indexmap[v3];
 #endif
 
-    OGL.triangles.vertices[v0].x = gSP.objMatrix.A * x0 + gSP.objMatrix.B * y0 + gSP.objMatrix.X;
-    OGL.triangles.vertices[v0].y = gSP.objMatrix.C * x0 + gSP.objMatrix.D * y0 + gSP.objMatrix.Y;
-    OGL.triangles.vertices[v0].z = 0.0f;
-    OGL.triangles.vertices[v0].w = 1.0f;
-    OGL.triangles.vertices[v0].s = 0.0f;
-    OGL.triangles.vertices[v0].t = 0.0f;
-    OGL.triangles.vertices[v1].x = gSP.objMatrix.A * x1 + gSP.objMatrix.B * y0 + gSP.objMatrix.X;
-    OGL.triangles.vertices[v1].y = gSP.objMatrix.C * x1 + gSP.objMatrix.D * y0 + gSP.objMatrix.Y;
-    OGL.triangles.vertices[v1].z = 0.0f;
-    OGL.triangles.vertices[v1].w = 1.0f;
-    OGL.triangles.vertices[v1].s = imageW - 1;
-    OGL.triangles.vertices[v1].t = 0.0f;
-    OGL.triangles.vertices[v2].x = gSP.objMatrix.A * x1 + gSP.objMatrix.B * y1 + gSP.objMatrix.X;
-    OGL.triangles.vertices[v2].y = gSP.objMatrix.C * x1 + gSP.objMatrix.D * y1 + gSP.objMatrix.Y;
-    OGL.triangles.vertices[v2].z = 0.0f;
-    OGL.triangles.vertices[v2].w = 1.0f;
-    OGL.triangles.vertices[v2].s = imageW - 1;
-    OGL.triangles.vertices[v2].t = imageH - 1;
-    OGL.triangles.vertices[v3].x = gSP.objMatrix.A * x0 + gSP.objMatrix.B * y1 + gSP.objMatrix.X;
-    OGL.triangles.vertices[v3].y = gSP.objMatrix.C * x0 + gSP.objMatrix.D * y1 + gSP.objMatrix.Y;
-    OGL.triangles.vertices[v3].z = 0.0f;
-    OGL.triangles.vertices[v3].w = 1.0f;
-    OGL.triangles.vertices[v3].s = 0;
-    OGL.triangles.vertices[v3].t = imageH - 1;
+    OGL.triangles.vertices[v0].vertex.x = gSP.objMatrix.A * x0 + gSP.objMatrix.B * y0 +
+        gSP.objMatrix.X;
+    OGL.triangles.vertices[v0].vertex.y = gSP.objMatrix.C * x0 + gSP.objMatrix.D * y0 +
+        gSP.objMatrix.Y;
+    OGL.triangles.vertices[v0].vertex.z = 0.0f;
+    OGL.triangles.vertices[v0].vertex.w = 1.0f;
+    OGL.triangles.vertices[v0].vertex.s = 0.0f;
+    OGL.triangles.vertices[v0].vertex.t = 0.0f;
+    OGL.triangles.vertices[v1].vertex.x = gSP.objMatrix.A * x1 + gSP.objMatrix.B * y0 +
+        gSP.objMatrix.X;
+    OGL.triangles.vertices[v1].vertex.y = gSP.objMatrix.C * x1 + gSP.objMatrix.D * y0 +
+        gSP.objMatrix.Y;
+    OGL.triangles.vertices[v1].vertex.z = 0.0f;
+    OGL.triangles.vertices[v1].vertex.w = 1.0f;
+    OGL.triangles.vertices[v1].vertex.s = imageW - 1;
+    OGL.triangles.vertices[v1].vertex.t = 0.0f;
+    OGL.triangles.vertices[v2].vertex.x = gSP.objMatrix.A * x1 + gSP.objMatrix.B * y1 +
+        gSP.objMatrix.X;
+    OGL.triangles.vertices[v2].vertex.y = gSP.objMatrix.C * x1 + gSP.objMatrix.D * y1 +
+        gSP.objMatrix.Y;
+    OGL.triangles.vertices[v2].vertex.z = 0.0f;
+    OGL.triangles.vertices[v2].vertex.w = 1.0f;
+    OGL.triangles.vertices[v2].vertex.s = imageW - 1;
+    OGL.triangles.vertices[v2].vertex.t = imageH - 1;
+    OGL.triangles.vertices[v3].vertex.x = gSP.objMatrix.A * x0 + gSP.objMatrix.B * y1 +
+        gSP.objMatrix.X;
+    OGL.triangles.vertices[v3].vertex.y = gSP.objMatrix.C * x0 + gSP.objMatrix.D * y1 +
+        gSP.objMatrix.Y;
+    OGL.triangles.vertices[v3].vertex.z = 0.0f;
+    OGL.triangles.vertices[v3].vertex.w = 1.0f;
+    OGL.triangles.vertices[v3].vertex.s = 0;
+    OGL.triangles.vertices[v3].vertex.t = imageH - 1;
 
     gDPSetTile( objSprite->imageFmt, objSprite->imageSiz, objSprite->imageStride, objSprite->imageAdrs, 0, objSprite->imagePal, G_TX_CLAMP, G_TX_CLAMP, 0, 0, 0, 0 );
     gDPSetTileSize( 0, 0, 0, (imageW - 1) << 2, (imageH - 1) << 2 );
     gSPTexture( 1.0f, 1.0f, 0, 0, TRUE );
 
     //glOrtho( 0, VI.width, VI.height, 0, 0.0f, 32767.0f );
-    OGL.triangles.vertices[v0].x = 2.0f * VI.rwidth * OGL.triangles.vertices[v0].x - 1.0f;
-    OGL.triangles.vertices[v0].y = -2.0f * VI.rheight * OGL.triangles.vertices[v0].y + 1.0f;
-    OGL.triangles.vertices[v0].z = -1.0f;
-    OGL.triangles.vertices[v0].w = 1.0f;
-    OGL.triangles.vertices[v1].x = 2.0f * VI.rwidth * OGL.triangles.vertices[v0].x - 1.0f;
-    OGL.triangles.vertices[v1].y = -2.0f * VI.rheight * OGL.triangles.vertices[v0].y + 1.0f;
-    OGL.triangles.vertices[v1].z = -1.0f;
-    OGL.triangles.vertices[v1].w = 1.0f;
-    OGL.triangles.vertices[v2].x = 2.0f * VI.rwidth * OGL.triangles.vertices[v0].x - 1.0f;
-    OGL.triangles.vertices[v2].y = -2.0f * VI.rheight * OGL.triangles.vertices[v0].y + 1.0f;
-    OGL.triangles.vertices[v2].z = -1.0f;
-    OGL.triangles.vertices[v2].w = 1.0f;
-    OGL.triangles.vertices[v3].x = 2.0f * VI.rwidth * OGL.triangles.vertices[v0].x - 1.0f;
-    OGL.triangles.vertices[v3].y = -2.0f * VI.rheight * OGL.triangles.vertices[v0].y + 1.0f;
-    OGL.triangles.vertices[v3].z = -1.0f;
-    OGL.triangles.vertices[v3].w = 1.0f;
+    OGL.triangles.vertices[v0].vertex.x = 2.0f * VI.rwidth * OGL.triangles.vertices[v0].vertex.x -
+        1.0f;
+    OGL.triangles.vertices[v0].vertex.y = -2.0f * VI.rheight *
+        OGL.triangles.vertices[v0].vertex.y + 1.0f;
+    OGL.triangles.vertices[v0].vertex.z = -1.0f;
+    OGL.triangles.vertices[v0].vertex.w = 1.0f;
+    OGL.triangles.vertices[v1].vertex.x = 2.0f * VI.rwidth * OGL.triangles.vertices[v0].vertex.x -
+        1.0f;
+    OGL.triangles.vertices[v1].vertex.y = -2.0f * VI.rheight *
+        OGL.triangles.vertices[v0].vertex.y + 1.0f;
+    OGL.triangles.vertices[v1].vertex.z = -1.0f;
+    OGL.triangles.vertices[v1].vertex.w = 1.0f;
+    OGL.triangles.vertices[v2].vertex.x = 2.0f * VI.rwidth * OGL.triangles.vertices[v0].vertex.x -
+        1.0f;
+    OGL.triangles.vertices[v2].vertex.y = -2.0f * VI.rheight *
+        OGL.triangles.vertices[v0].vertex.y + 1.0f;
+    OGL.triangles.vertices[v2].vertex.z = -1.0f;
+    OGL.triangles.vertices[v2].vertex.w = 1.0f;
+    OGL.triangles.vertices[v3].vertex.x = 2.0f * VI.rwidth * OGL.triangles.vertices[v0].vertex.x -
+        1.0f;
+    OGL.triangles.vertices[v3].vertex.y = -2.0f * VI.rheight *
+        OGL.triangles.vertices[v0].vertex.y + 1.0f;
+    OGL.triangles.vertices[v3].vertex.z = -1.0f;
+    OGL.triangles.vertices[v3].vertex.w = 1.0f;
 
     OGL_AddTriangle(v0, v1, v2);
     OGL_AddTriangle(v0, v2, v3);

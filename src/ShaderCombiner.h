@@ -14,6 +14,7 @@
 #define SC_COLOR                2
 #define SC_TEXCOORD0            3
 #define SC_TEXCOORD1            4
+#define SC_TEXATLASBOUNDS0      5
 
 #ifdef UNIFORM_CHECK
 #define SC_SetUniform1i(A, B) \

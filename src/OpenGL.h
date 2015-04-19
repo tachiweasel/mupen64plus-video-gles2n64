@@ -57,6 +57,12 @@
 
 #define OGL_FRAMETIME_NUM       8
 
+struct BufferedVertex {
+    SPVertex vertex;
+    f32 atlasStartS, atlasStartT;
+    f32 atlasSizeS, atlasSizeT;
+};
+
 struct GLVertex
 {
     float x, y, z, w;
@@ -120,9 +126,9 @@ struct GLInfo
 #define ELEMBUFF_SIZE 1024
 
     struct {
-        SPVertex    vertices[VERTBUFF_SIZE];
-        GLubyte     elements[ELEMBUFF_SIZE];
-        int         num;
+        BufferedVertex vertices[VERTBUFF_SIZE];
+        GLubyte        elements[ELEMBUFF_SIZE];
+        int            num;
 
 //#ifdef __TRIBUFFER_OPT
 

@@ -6,7 +6,7 @@
 #include "Hash.h"
 #include "convert.h"
 
-struct SPVertex;
+struct BufferedVertex;
 
 struct CachedTexture
 {
@@ -95,7 +95,7 @@ void TextureCache_ActivateTexture( u32 t, CachedTexture *texture );
 void TextureCache_ActivateNoise( u32 t );
 void TextureCache_ActivateDummy( u32 t );
 bool TextureCache_Verify();
-void TextureCache_ConvertTextureCoord( SPVertex *destVertex, f32 s, f32 t );
+void TextureCache_ConvertTextureCoord( BufferedVertex *destVertex, f32 s, f32 t );
 
 #endif
 
