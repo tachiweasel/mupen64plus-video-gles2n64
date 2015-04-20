@@ -229,6 +229,7 @@ void gSP4Triangles(const s32 v00, const s32 v01, const s32 v02,
 
 
 inline bool gSPCommandRequiresFlush(u32 cmd) {
+#if 0
     if (cmd == G_TRI1 ||
             cmd == G_TRI2 ||
             cmd == G_TRI4 ||
@@ -247,6 +248,7 @@ inline bool gSPCommandRequiresFlush(u32 cmd) {
             cmd == F3D_TEXTURE ||           // texture metadata, ditto
             cmd == G_SETTILE)               // texture upload
         return false;
+#endif
 
 #if 0
     // Ideal:
@@ -273,6 +275,80 @@ inline bool gSPCommandRequiresFlush(u32 cmd) {
         return false;
     }
 #endif
+
+    if (cmd == G_TRI1 ||
+            cmd == G_TRI2 ||
+            cmd == G_TRI4 ||
+            cmd == G_QUAD ||
+            cmd == G_NOOP ||
+            cmd == G_RDPNOOP ||
+            cmd == G_MTX ||
+            cmd == G_VTX ||
+            cmd == F3D_DL ||
+            cmd == F3D_POPMTX ||
+            cmd == F3D_ENDDL ||
+            cmd == G_RDPPIPESYNC ||
+            cmd == G_TEXRECT ||             // texture rectangle, should be batchable
+            cmd == G_SETTILESIZE ||         // tile size, atlasing should take care of it
+            cmd == G_SETTIMG ||             // texture image, ditto
+            cmd == F3D_TEXTURE ||           // texture metadata, ditto
+            cmd == G_SETTILE ||             // texture upload stuff, ditto
+            cmd == G_SETPRIMCOLOR ||
+            cmd == G_SETCOMBINE ||
+            cmd == F3D_MOVEWORD ||
+            cmd == F3D_SETOTHERMODE_L ||
+            cmd == F3D_SETGEOMETRYMODE ||
+            cmd == F3D_CLEARGEOMETRYMODE ||
+            cmd == G_LOADBLOCK ||
+            cmd == G_SETENVCOLOR ||
+            cmd == F3D_SETOTHERMODE_H ||
+            cmd == G_RDPFULLSYNC ||
+            cmd == F3D_RDPHALF_1 ||
+            cmd == F3D_RDPHALF_2 ||
+            cmd == F3D_MOVEMEM ||
+            cmd == G_RDPLOADSYNC ||
+            cmd == G_RDPTILESYNC) {
+        return false;
+
+#if 0
+    // Aggressive:
+    if (cmd == G_TRI1 ||
+            cmd == G_TRI2 ||
+            cmd == G_TRI4 ||
+            cmd == G_QUAD ||
+            cmd == G_NOOP ||
+            cmd == G_RDPNOOP ||
+            cmd == G_MTX ||
+            cmd == G_VTX ||
+            cmd == F3D_DL ||
+            cmd == F3D_POPMTX ||
+            cmd == F3D_ENDDL ||
+            cmd == G_RDPPIPESYNC ||
+            cmd == G_TEXRECT ||             // texture rectangle, should be batchable
+            cmd == G_SETTILESIZE ||         // tile size, atlasing should take care of it
+            cmd == G_SETTIMG ||             // texture image, ditto
+            cmd == F3D_TEXTURE ||           // texture metadata, ditto
+            cmd == G_SETTILE ||             // texture upload stuff, ditto
+            cmd == G_SETPRIMCOLOR ||
+            cmd == F3D_SETOTHERMODE_L ||
+            cmd == F3D_SETGEOMETRYMODE ||
+            cmd == F3D_CLEARGEOMETRYMODE ||
+            cmd == G_LOADBLOCK ||
+            cmd == G_SETENVCOLOR ||
+            cmd == G_SETSCISSOR ||
+            cmd == F3D_SETOTHERMODE_H ||
+            cmd == G_FILLRECT ||
+            cmd == G_RDPFULLSYNC ||
+            cmd == F3D_RDPHALF_1 ||
+            cmd == F3D_RDPHALF_2 ||
+            cmd == F3D_MOVEMEM ||
+            cmd == G_SETCOMBINE ||
+            cmd == G_RDPLOADSYNC ||
+            cmd == F3D_MOVEWORD ||
+            cmd == G_SETBLENDCOLOR) {
+        return false;
+#endif
+    }
 
     //printf("flush required due to %s\n", GBI_GetFuncName(GBI.current->type, cmd));
     return true;

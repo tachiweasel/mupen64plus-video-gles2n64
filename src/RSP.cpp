@@ -16,8 +16,8 @@
 #include "gSP.h"
 #include "Textures.h"
 
-#define PRINT_DISPLAYLIST
-#define PRINT_DISPLAYLIST_NUM 1
+//#define PRINT_DISPLAYLIST
+//#define PRINT_DISPLAYLIST_NUM 1
 
 RSPInfo     RSP;
 
