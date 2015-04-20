@@ -229,6 +229,7 @@ struct gDPInfo
     } texRect;
 
     u32 changed;
+    bool textureNeedsUpdate;
 
     //u16 palette[256];
     u32 paletteCRC16[16];

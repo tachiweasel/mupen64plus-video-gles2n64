@@ -13,6 +13,7 @@
 #include "CRC.h"
 #include "DepthBuffer.h"
 #include "VI.h"
+#include "Textures.h"
 #include "Config.h"
 
 
@@ -482,6 +483,8 @@ void gDPSetTextureImage( u32 format, u32 size, u32 width, u32 address )
     gDP.textureImage.address = RSP_SegmentToPhysical( address );
     gDP.textureImage.bpl = gDP.textureImage.width << gDP.textureImage.size >> 1;
 
+    gDP.textureNeedsUpdate = true;
+
 #ifdef DEBUG
     DebugMsg( DEBUG_HIGH | DEBUG_HANDLED | DEBUG_TEXTURE, "gDPSetTextureImage( %s, %s, %i, 0x%08X );\n",
         ImageFormatText[gDP.textureImage.format],
@@ -606,6 +609,9 @@ void gDPSetTile( u32 format, u32 size, u32 line, u32 tmem, u32 tile, u32 palette
 
     if (!gDP.tiles[tile].masks) gDP.tiles[tile].clamps = 1;
     if (!gDP.tiles[tile].maskt) gDP.tiles[tile].clampt = 1;
+
+    gDP.changed |= CHANGED_TILE;
+    gDP.textureNeedsUpdate = true;
 }
 
 void gDPSetTileSize( u32 tile, u32 uls, u32 ult, u32 lrs, u32 lrt )
@@ -621,6 +627,7 @@ void gDPSetTileSize( u32 tile, u32 uls, u32 ult, u32 lrs, u32 lrt )
     gDP.tiles[tile].flrt = _FIXED2FLOAT( lrt, 2 );
 
     gDP.changed |= CHANGED_TILE;
+    gDP.textureNeedsUpdate = true;
 
 #ifdef DEBUG
     DebugMsg( DEBUG_HIGH | DEBUG_HANDLED | DEBUG_TEXTURE, "gDPSetTileSize( %u, %.2f, %.2f, %.2f, %.2f );\n",
@@ -688,6 +695,7 @@ void gDPLoadTile( u32 tile, u32 uls, u32 ult, u32 lrs, u32 lrt )
     gDP.textureMode = TEXTUREMODE_NORMAL;
     gDP.loadType = LOADTYPE_TILE;
     gDP.changed |= CHANGED_TMEM;
+    gDP.textureNeedsUpdate = true;
 
 #ifdef DEBUG
         DebugMsg( DEBUG_HIGH | DEBUG_HANDLED | DEBUG_TEXTURE, "gDPLoadTile( %u, %i, %i, %i, %i );\n",
@@ -754,6 +762,7 @@ void gDPLoadBlock( u32 tile, u32 uls, u32 ult, u32 lrs, u32 dxt )
     gDP.textureMode = TEXTUREMODE_NORMAL;
     gDP.loadType = LOADTYPE_BLOCK;
     gDP.changed |= CHANGED_TMEM;
+    gDP.textureNeedsUpdate = true;
 
 #ifdef DEBUG
     DebugMsg( DEBUG_HIGH | DEBUG_HANDLED | DEBUG_TEXTURE, "gDPLoadBlock( %u, %u, %u, %u, %u );\n",
@@ -795,6 +804,7 @@ void gDPLoadTLUT( u32 tile, u32 uls, u32 ult, u32 lrs, u32 lrt )
     gDP.paletteCRC256 = Hash_Calculate( 0xFFFFFFFF, gDP.paletteCRC16, 64 );
     
     gDP.changed |= CHANGED_TMEM;
+    gDP.textureNeedsUpdate = true;
 
 #ifdef DEBUG
     DebugMsg( DEBUG_HIGH | DEBUG_HANDLED | DEBUG_TEXTURE, "gDPLoadTLUT( %u, %i, %i, %i, %i );\n",

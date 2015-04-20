@@ -187,7 +187,7 @@ void gSPTriangle(s32 v0, s32 v1, s32 v2)
 void gSP1Triangle( const s32 v0, const s32 v1, const s32 v2)
 {
     gSPTriangle( v0, v1, v2);
-    gSPFlushTriangles();
+    //gSPFlushTriangles();
 }
 
 void gSP2Triangles(const s32 v00, const s32 v01, const s32 v02, const s32 flag0,
@@ -1426,7 +1426,7 @@ void gSPTexture( f32 sc, f32 tc, s32 level, s32 tile, s32 on )
 
     gSP.changed |= CHANGED_TEXTURESCALE;
 
-    //OGL_UpdateStates();
+    gDP.textureNeedsUpdate = true;
 }
 
 void gSPEndDisplayList()

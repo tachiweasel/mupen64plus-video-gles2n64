@@ -12,11 +12,12 @@
 #include "ShaderCombiner.h"
 #include "DepthBuffer.h"
 #include "GBI.h"
+#include "Config.h"
 #include "gSP.h"
 #include "Textures.h"
 
-// #define PRINT_DISPLAYLIST
-// #define PRINT_DISPLAYLIST_NUM 1
+#define PRINT_DISPLAYLIST
+#define PRINT_DISPLAYLIST_NUM 1
 
 RSPInfo     RSP;
 
@@ -110,6 +111,7 @@ void RSP_ProcessDList()
         RSP.nextCmd = _SHIFTR( *(u32*)&RDRAM[pc+8], 24, 8 );
         RSP.cmd = _SHIFTR( w0, 24, 8 );
         RSP.PC[RSP.PCi] += 8;
+        RSP.count++;
 
 #ifdef PROFILE_GBI
         GBI_ProfileBegin(RSP.cmd);
@@ -124,6 +126,8 @@ void RSP_ProcessDList()
 #ifdef PROFILE_GBI
         GBI_ProfileEnd(RSP.cmd);
 #endif
+
+        gSPFlushTriangles();
     }
 
 #ifdef PRINT_DISPLAYLIST

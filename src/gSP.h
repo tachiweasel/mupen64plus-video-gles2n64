@@ -7,6 +7,7 @@
 #include "GBI.h"
 #include "gDP.h"
 #include "F3D.h"
+#include "RSP.h"
 
 #define CHANGED_VIEWPORT        0x01
 #define CHANGED_MATRIX          0x02
@@ -239,11 +240,16 @@ inline bool gSPCommandRequiresFlush(u32 cmd) {
             cmd == F3D_DL ||
             cmd == F3D_POPMTX ||
             cmd == F3D_ENDDL ||
-            cmd == G_RDPPIPESYNC)
+            cmd == G_RDPPIPESYNC ||
+            cmd == G_TEXRECT ||             // texture rectangle, should be batchable
+            cmd == G_SETTILESIZE ||         // tile size, atlasing should take care of it
+            cmd == G_SETTIMG ||             // texture image, ditto
+            cmd == F3D_TEXTURE ||           // texture metadata, ditto
+            cmd == G_SETTILE)               // texture upload
         return false;
 
-    // Ideal:
 #if 0
+    // Ideal:
     if (cmd == G_TRI1 ||
             cmd == G_TRI2 ||
             cmd == G_TRI4 ||

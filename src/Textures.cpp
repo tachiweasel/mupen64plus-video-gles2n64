@@ -1094,7 +1094,7 @@ u32 TextureCache_CalculateCRC( u32 t, u32 width, u32 height )
 
 void TextureCache_ActivateTexture( u32 t, CachedTexture *texture )
 {
-
+#if 0
 #ifdef __HASHMAP_OPT
     cache.hash.insert(texture->crc, texture);
 #endif
@@ -1121,6 +1121,7 @@ void TextureCache_ActivateTexture( u32 t, CachedTexture *texture )
     {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, config.texture.maxAnisotropy);
     }
+#endif
 
     texture->lastDList = RSP.DList;
     TextureCache_MoveToTop( texture );
@@ -1393,6 +1394,7 @@ void TextureCache_Update( u32 t )
         current = current->lower;
     }
 
+    printf("cache miss!\n");
     cache.misses++;
 
     glActiveTexture( GL_TEXTURE0 + t);
@@ -1502,8 +1504,11 @@ void TextureCache_ConvertTextureCoord( BufferedVertex *destVertex, f32 s, f32 t 
 */
 
     // Very important!
-    TextureCache_Update(0);
-    TextureCache_Update(1);
+    if (gDP.textureNeedsUpdate) {
+        TextureCache_Update(0);
+        TextureCache_Update(1);
+        gDP.textureNeedsUpdate = false;
+    }
 
     CachedTexture *texture = cache.current[0];
     f32 computedS = ((s * gSP.texture.scales * texture->shiftScaleS) +
